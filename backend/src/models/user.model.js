@@ -6,7 +6,7 @@ import {
   AvailableUserRoles,
   UserLoginType,
   UserRolesEnum,
-} from "../constants";
+} from "../constants.js";
 
 const userSchema = new Schema(
   {
@@ -41,11 +41,13 @@ const userSchema = new Schema(
       type: String,
     },
     role: {
-      type: AvailableUserRoles,
+      type: String,
+      enum: AvailableUserRoles,
       default: UserRolesEnum.USER,
     },
     loginType: {
-      type: AvailableSocialLogins,
+      type: String,
+      enum: AvailableSocialLogins,
       default: UserLoginType.EMAIL_PASSWORD,
     },
     password: {

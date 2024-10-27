@@ -14,3 +14,8 @@ export const UserLoginType = {
 };
 
 export const AvailableSocialLogins = Object.values(UserLoginType);
+
+export const cookieOptions = {
+  httpOnly: true,
+  secure: true,
+};
