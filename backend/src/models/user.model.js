@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import {
   AvailableSocialLogins,
   AvailableUserRoles,
+  DefaultProfileUrl,
   UserLoginType,
   UserRolesEnum,
 } from "../constants.js";
@@ -34,8 +35,7 @@ const userSchema = new Schema(
     },
     avatar: {
       type: String,
-      default:
-        "https://res.cloudinary.com/krishan-07/image/upload/v1729935323/default_pfp_gzrmwh.png",
+      default: DefaultProfileUrl,
     },
     refreshToken: {
       type: String,

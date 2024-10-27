@@ -15,7 +15,10 @@ export const UserLoginType = {
 
 export const AvailableSocialLogins = Object.values(UserLoginType);
 
-export const cookieOptions = {
+export const CookieOptions = {
   httpOnly: true,
   secure: true,
 };
+
+export const DefaultProfileUrl =
+  "https://res.cloudinary.com/krishan-07/image/upload/v1729935323/default_pfp_gzrmwh.png";
