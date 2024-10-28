@@ -7,7 +7,11 @@ import {
   removeFromCloudinary,
   uploadOnCloudinary,
 } from "../utils/cloudinary.js";
-import { CookieOptions, DefaultProfileUrl } from "../constants.js";
+import {
+  CookieOptions,
+  DefaultProfileUrl,
+  UserLoginType,
+} from "../constants.js";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 
@@ -92,6 +96,19 @@ const loginUser = asyncHandler(async (req, res) => {
   });
 
   if (!isUserExists) throw new ApiError(404, "User not found");
+
+  if (user.loginType !== UserLoginType.EMAIL_PASSWORD) {
+    // If user is registered with some other method, we will ask him/her to use the same method as registered.
+    // This shows that if user is registered with methods other than email password, he/she will not be able to login with password. Which makes password field redundant for the SSO
+    throw new ApiError(
+      400,
+      "You have previously registered using " +
+        user.loginType?.toLowerCase() +
+        ". Please use the " +
+        user.loginType?.toLowerCase() +
+        " login option to access your account."
+    );
+  }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
     isUserExists._id
@@ -316,6 +333,27 @@ const getUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User fetched successfully"));
 });
 
+const handleSocialLogin = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user?._id);
+
+  if (!user) {
+    throw new ApiError(404, "User does not exist");
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  return res
+    .status(301)
+    .cookie("accessToken", accessToken, CookieOptions)
+    .cookie("refreshToken", refreshToken, CookieOptions)
+    .redirect(
+      // redirect user to the frontend with access and refresh token in case user is not using cookies
+      `${process.env.CLIENT_SSO_REDIRECT_URL}?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -327,4 +365,5 @@ export {
   removeAvatar,
   getCurrentUser,
   getUser,
+  handleSocialLogin,
 };

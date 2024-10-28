@@ -13,6 +13,7 @@ import {
   updateUserDetails,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
+import passport from "passport";
 
 const router = Router();
 
@@ -33,5 +34,32 @@ router
 router.route("/remove-avatar").patch(verifyJWT, removeAvatar);
 
 router.route("/current-user").get(verifyJWT, getCurrentUser);
+
+// SSO routes
+router.route("/google").get(
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+  }),
+  (req, res) => {
+    res.send("redirecting to google...");
+  }
+);
+
+router.route("/github").get(
+  passport.authenticate("github", {
+    scope: ["profile", "email"],
+  }),
+  (req, res) => {
+    res.send("redirecting to github...");
+  }
+);
+
+router
+  .route("/google/callback")
+  .get(passport.authenticate("google"), handleSocialLogin);
+
+router
+  .route("/github/callback")
+  .get(passport.authenticate("github"), handleSocialLogin);
 
 export default router;

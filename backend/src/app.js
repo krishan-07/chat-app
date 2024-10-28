@@ -24,6 +24,17 @@ app.use(
 app.use(express.static("public"));
 app.use(cookieParser());
 
+// required for passport
+app.use(
+  session({
+    secret: process.env.EXPRESS_SESSION_SECRET,
+    resave: true,
+    saveUninitialized: true,
+  })
+); // session secret
+app.use(passport.initialize());
+app.use(passport.session()); // persistent login sessions
+
 //routes imports
 import UserRouter from "./routes/user.routes.js";
 
