@@ -51,10 +51,12 @@ app.use(passport.initialize());
 app.use(passport.session()); // persistent login sessions
 
 //routes imports
-import UserRouter from "./routes/user.routes.js";
+import userRouter from "./routes/user.routes.js";
+import messageRouter from "./routes/message.routes.js";
 
 //routes declaration
-app.use("/api/v1/user", UserRouter);
+app.use("/api/v1/user", userRouter);
+app.use("/api/v1/message", messageRouter);
 
 initializeSocketId(io);
 
