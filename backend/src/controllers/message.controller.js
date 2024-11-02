@@ -4,7 +4,11 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/ayncHandler.js";
 import { Chat } from "../models/chat.model.js";
 import { Message } from "../models/message.model.js";
-import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import {
+  extractPublicIdFromUrl,
+  removeFromCloudinary,
+  uploadOnCloudinary,
+} from "../utils/cloudinary.js";
 import { emitSocketEvent } from "../socket/index.js";
 import { ChatEventEnum } from "../constants.js";
 
@@ -138,4 +142,73 @@ const sendMessage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, recievedMessage, "Message sent successfully"));
 });
 
-export { getAllMessages, sendMessage };
+const deleteMessage = asyncHandler(async (req, res) => {
+  const { chatId, messageId } = req.params;
+
+  const chat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    participants: req.user?._id,
+  });
+  if (!chat) throw new ApiError(404, "Chat does not exists");
+
+  const message = await Message.findOne({
+    _id: new mongoose.Types.ObjectId(messageId),
+  });
+  if (!message) throw new ApiError(404, "Message does not exists");
+
+  if (message.sender.toString() !== req.user?._id.toString())
+    throw new ApiError(
+      401,
+      "You don't have access to delete this message, you are not the sender"
+    );
+
+  if (message.attachments.length > 0) {
+    message.attachments.forEach((attachment) => {
+      const response = removeFromCloudinary(extractPublicIdFromUrl(attachment));
+      if (response.status !== "ok")
+        throw new ApiError(500, "Error while removing from cloudinary");
+    });
+  }
+
+  const deletedMessage = await Message.findByIdAndUpdate(
+    messageId,
+    {
+      $set: {
+        content: "This message was deleted",
+        attachments: [],
+      },
+    },
+    {
+      new: true,
+    }
+  );
+  if (!deletedMessage) throw new ApiError(500, "Internal server error");
+
+  if (chat.lastMessage.toString() === deletedMessage._id.toString()) {
+    const chat = await Chat.findByIdAndUpdate(
+      chatId,
+      {
+        $set: {
+          lastMessage: deletedMessage.content,
+        },
+      },
+      { new: true }
+    );
+    if (!chat) throw new ApiError(500, "Internal server Error");
+  }
+
+  chat.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.MESSAGE_DELETE_EVENT,
+      deletedMessage
+    );
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, deletedMessage, "Message deleted successfully"));
+});
+
+export { getAllMessages, sendMessage, deleteMessage };
