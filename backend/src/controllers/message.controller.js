@@ -68,7 +68,7 @@ const getAllMessages = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, message[0], "Messages fetched successfully"));
+    .json(new ApiResponse(200, message, "Messages fetched successfully"));
 });
 
 const sendMessage = asyncHandler(async (req, res) => {
@@ -93,7 +93,10 @@ const sendMessage = asyncHandler(async (req, res) => {
       const file = uploadOnCloudinary(attachment);
       if (!file.url)
         throw new ApiError(400, "Error while uploading on cloudinary");
-      attachments.push(file.url);
+      attachments.push({
+        url: file.secure_url,
+        type: file.resource_type,
+      });
     });
   }
 
@@ -113,6 +116,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     },
     { new: true }
   );
+  if (!updatedChat) throw new ApiError(500, "Error while last message in chat");
 
   const structuredMessage = await Message.aggregate([
     {
@@ -164,7 +168,10 @@ const deleteMessage = asyncHandler(async (req, res) => {
 
   if (message.attachments.length > 0) {
     message.attachments.forEach((attachment) => {
-      const response = removeFromCloudinary(extractPublicIdFromUrl(attachment));
+      const response = removeFromCloudinary(
+        extractPublicIdFromUrl(attachment.url),
+        attachment.type
+      );
       if (response !== "ok")
         throw new ApiError(500, "Error while removing from cloudinary");
     });
