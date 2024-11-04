@@ -6,6 +6,11 @@ import { User } from "../models/user.model.js";
 import { Chat } from "../models/chat.model.js";
 import { emitSocketEvent } from "../socket";
 import { ChatEventEnum } from "../constants";
+import { Message } from "../models/message.model.js";
+import {
+  extractPublicIdFromUrl,
+  removeFromCloudinary,
+} from "../utils/cloudinary.js";
 
 const commonAggregationPipeline = () => {
   return [
@@ -66,6 +71,36 @@ const commonAggregationPipeline = () => {
       },
     },
   ];
+};
+
+const deleteCascadeChatMessages = async (chatId) => {
+  const messages = await Message.find({
+    chat: new mongoose.Types.ObjectId(chatId),
+  });
+  if (!messages.length) throw new ApiError(404, "No messages found");
+
+  const response = await Message.deleteMany({
+    chat: new mongoose.Types.ObjectId(chatId),
+  });
+  if (response.deletedCount !== messages.length - 1) {
+    throw new ApiError(500, "Error while removing the data");
+  }
+
+  let attachments = [];
+
+  attachments.concat(...messages.map((message) => message.attachments));
+
+  attachments.forEach(async (attachment) => {
+    const response = await removeFromCloudinary(
+      extractPublicIdFromUrl(attachment.url),
+      attachment.type
+    );
+    if (response !== "ok")
+      throw new ApiError(
+        500,
+        "Internal server error while removing attachments"
+      );
+  });
 };
 
 const createOrGetSingleChat = asyncHandler(async (req, res) => {
@@ -152,4 +187,36 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, payload, "Chat created successfully"));
 });
 
-export { createOrGetSingleChat };
+const deleteSingleChat = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  const chat = await Chat.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(chatId),
+      },
+    },
+  ]);
+
+  const payload = chat[0];
+  if (!payload) throw new ApiError(404, "Chat doesn't exists");
+
+  await Chat.findByIdAndDelete(payload._id);
+  await deleteCascadeChatMessages(chatId);
+
+  payload.participants.forEach((participant) => {
+    if (participant.toString() === req.user?._id) return;
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.LEAVE_CHAT_EVENT,
+      payload
+    );
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Chat deleted successfully"));
+});
+
+export { createOrGetSingleChat, deleteSingleChat };
