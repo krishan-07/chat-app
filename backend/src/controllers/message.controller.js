@@ -165,7 +165,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
   if (message.attachments.length > 0) {
     message.attachments.forEach((attachment) => {
       const response = removeFromCloudinary(extractPublicIdFromUrl(attachment));
-      if (response.status !== "ok")
+      if (response !== "ok")
         throw new ApiError(500, "Error while removing from cloudinary");
     });
   }

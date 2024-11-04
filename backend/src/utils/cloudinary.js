@@ -28,7 +28,7 @@ const removeFromCloudinary = async (publicId, resourseType = "image") => {
     const response = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourseType,
     });
-    return response;
+    return response.result;
   } catch (error) {
     console.log("Error while removing from cloudinary", error);
     return null;

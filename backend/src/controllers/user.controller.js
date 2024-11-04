@@ -260,7 +260,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
         extractPublicIdFromUrl(oldAvatar.avatar)
       );
 
-      if (response.result !== "ok")
+      if (response !== "ok")
         throw new ApiError(400, "Error while removing the old file");
     }
   }
