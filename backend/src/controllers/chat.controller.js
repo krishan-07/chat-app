@@ -173,7 +173,7 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
   if (!payload) throw new ApiError(500, "Internal server error");
 
   payload.participants.forEach((participant) => {
-    if (participant.toString() === req.user?._id.toString()) return;
+    if (participant._id.toString() === req.user?._id.toString()) return;
     emitSocketEvent(
       req,
       participant._id.toString(),
@@ -190,21 +190,14 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
 const deleteSingleChat = asyncHandler(async (req, res) => {
   const { chatId } = req.params;
 
-  const chat = await Chat.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(chatId),
-      },
-    },
-  ]);
+  const chat = await Chat.findById(chatId);
 
-  const payload = chat[0];
-  if (!payload) throw new ApiError(404, "Chat doesn't exists");
+  if (!chat) throw new ApiError(404, "Chat doesn't exists");
 
-  await Chat.findByIdAndDelete(payload._id);
+  await Chat.findByIdAndDelete(chatId);
   await deleteCascadeChatMessages(chatId);
 
-  payload.participants.forEach((participant) => {
+  chat.participants.forEach((participant) => {
     if (participant.toString() === req.user?._id) return;
     emitSocketEvent(
       req,
@@ -219,4 +212,51 @@ const deleteSingleChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "Chat deleted successfully"));
 });
 
-export { createOrGetSingleChat, deleteSingleChat };
+const createGroupChat = asyncHandler(async (req, res) => {
+  const { name, participants } = req.body;
+  if (participants.includes(req.user?._id))
+    throw new ApiError(
+      400,
+      "Participants array should not contain the group creator"
+    );
+
+  const members = [new Set([...participants, req.user?._id])];
+
+  if (members.length < 3)
+    throw new ApiError(400, "A group should contain more than 3 members");
+
+  const groupChat = await Chat.create({
+    name: name || "Group chat",
+    isGroupChat: true,
+    participants: members,
+    admin: req.user?._id,
+  });
+
+  const chat = await Chat.aggregate([
+    {
+      $match: {
+        _id: groupChat._id,
+      },
+    },
+    ...commonAggregationPipeline,
+  ]);
+
+  const payload = chat[0];
+  if (!payload) throw new ApiError(500, "Internal server error");
+
+  payload.participants.forEach((participant) => {
+    if (participant._id.toString() === req.user?._id.toString()) return;
+    emitSocketEvent(
+      req,
+      participant._id,
+      ChatEventEnum.NEW_CHAT_EVENT,
+      payload
+    );
+  });
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, payload, "GroupChat created successfully"));
+});
+
+export { createOrGetSingleChat, deleteSingleChat, createGroupChat };
