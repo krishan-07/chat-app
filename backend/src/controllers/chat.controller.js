@@ -259,4 +259,61 @@ const createGroupChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, payload, "GroupChat created successfully"));
 });
 
-export { createOrGetSingleChat, deleteSingleChat, createGroupChat };
+const renameGrouphat = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+  const { name } = req.body;
+
+  const chat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    isGroupChat: true,
+  });
+  if (!chat) throw new ApiError(404, "Group chat does not exists");
+
+  if (chat.admin.toString() !== req.user?.id.toString())
+    throw new ApiError(401, "You are not the admin");
+
+  const updatedChat = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $set: {
+        name: name || chat.name,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const groupChat = await Chat.aggregate([
+    {
+      $match: {
+        _id: updatedChat._id,
+      },
+    },
+    ...commonAggregationPipeline,
+  ]);
+
+  const payload = groupChat[0];
+  if (!payload) throw new ApiError(500, "Internal server error");
+
+  updatedChat.participants.forEach((participant) => {
+    if (participant.toString() === req.user?._id.toString()) return;
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.UPDATE_GROUP_NAME_EVENT,
+      payload
+    );
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, payload, "Chat updated successfully"));
+});
+
+export {
+  createOrGetSingleChat,
+  deleteSingleChat,
+  createGroupChat,
+  renameGrouphat,
+};
