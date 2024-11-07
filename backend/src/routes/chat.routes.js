@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import {
+  addNewParticipantInTheGroup,
   createGroupChat,
   createOrGetSingleChat,
   deleteSingleChat,
@@ -12,7 +13,9 @@ router.use(verifyJWT);
 
 router.route("/c/:receiverId").post(createOrGetSingleChat);
 router.route("/remove/:chatId").delete(deleteSingleChat);
+
 router.route("/group").post(createGroupChat);
-router.router("/group/rename").post(renameGrouphat);
+router.route("/group/rename").patch(renameGrouphat);
+router.route("/group/add/:memberId").patch(addNewParticipantInTheGroup);
 
 export default router;
