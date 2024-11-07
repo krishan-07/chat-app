@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const messageSchema = new Schema(
   {
     sender: {
-      type: mongoose.Types.ObjectId(),
+      type: mongoose.Types.ObjectId,
       ref: "User",
     },
     content: {
@@ -20,7 +20,7 @@ const messageSchema = new Schema(
       default: [],
     },
     chat: {
-      type: mongoose.Types.ObjectId(),
+      type: mongoose.Types.ObjectId,
       ref: "Chat",
     },
   },

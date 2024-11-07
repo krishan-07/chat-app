@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { createServer } from "http";
+import session from "express-session";
 import { Server } from "socket.io";
 import { initializeSocketId } from "./socket/index.js";
 
@@ -54,6 +55,7 @@ app.use(passport.session()); // persistent login sessions
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.routes.js";
 import chatRouter from "./routes/chat.routes.js";
+import passport from "passport";
 
 //routes declaration
 app.use("/api/v1/user", userRouter);
