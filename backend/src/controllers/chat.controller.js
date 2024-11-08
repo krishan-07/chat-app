@@ -312,26 +312,26 @@ const renameGrouphat = asyncHandler(async (req, res) => {
 });
 
 const addNewParticipantInTheGroup = asyncHandler(async (req, res) => {
-  const { memberId, chatId } = req.body;
+  const { participantId, chatId } = req.body;
 
   const chat = await Chat.findOne({
     _id: new mongoose.Types.ObjectId(chatId),
     isGroupChat: true,
   });
   if (!chat) throw new ApiError(404, "groupChat does not exists");
-  if (chat.admin.toString() === req.user?._id)
+  if (chat.admin.toString() === req.user?._id.toString())
     throw new ApiError(401, "You are not the admin of the group");
 
   const existingMembers = chat.participants;
 
-  if (existingMembers?.includes(memberId))
+  if (existingMembers?.includes(participantId))
     throw new ApiError(400, "Member already in the group");
 
   const updatedChat = await Chat.findByIdAndUpdate(
     chatId,
     {
       $push: {
-        participants: memberId,
+        participants: participantId,
       },
     },
     {
@@ -351,11 +351,60 @@ const addNewParticipantInTheGroup = asyncHandler(async (req, res) => {
 
   if (!payload) throw new ApiError(500, "Internal server error");
 
-  emitSocketEvent(req, memberId, ChatEventEnum.NEW_CHAT_EVENT, payload);
+  emitSocketEvent(req, participantId, ChatEventEnum.NEW_CHAT_EVENT, payload);
 
   return res
     .status(200)
     .json(new ApiError(200, payload, "New members added successfully"));
+});
+
+const removeParticipantFromTheGroup = asyncHandler(async (req, res) => {
+  const { chatId, participantId } = req.params;
+
+  const chat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    isGroupChat: true,
+  });
+  if (!chat) throw new ApiError(404, "GroupChat doesnot exists");
+
+  if (chat.admin !== req.user?._id)
+    throw new ApiError(
+      401,
+      "Cannot perform this action, you are not the admin"
+    );
+
+  if (!chat.participants.includes(participantId.toString()))
+    throw new ApiError(404, "No such participants found to be removed");
+
+  const updatedChat = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $pull: {
+        participants: participantId,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const groupChat = await Chat.aggregate([
+    {
+      $match: {
+        _id: updatedChat._id,
+      },
+    },
+    ...commonAggregationPipeline(),
+  ]);
+
+  const payload = groupChat[0];
+  if (!payload) throw new ApiError(500, "Internal server error");
+
+  emitSocketEvent(req, participantId, ChatEventEnum.LEAVE_CHAT_EVENT, payload);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, payload, "Participant removed successfully"));
 });
 
 export {
@@ -364,4 +413,5 @@ export {
   createGroupChat,
   renameGrouphat,
   addNewParticipantInTheGroup,
+  removeParticipantFromTheGroup,
 };

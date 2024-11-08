@@ -5,6 +5,7 @@ import {
   createGroupChat,
   createOrGetSingleChat,
   deleteSingleChat,
+  removeParticipantFromTheGroup,
   renameGrouphat,
 } from "../controllers/chat.controller.js";
 
@@ -16,6 +17,9 @@ router.route("/remove/:chatId").delete(deleteSingleChat);
 
 router.route("/group").post(createGroupChat);
 router.route("/group/rename").patch(renameGrouphat);
-router.route("/group/add/:memberId").patch(addNewParticipantInTheGroup);
+router.route("/group/add/:particpantId").patch(addNewParticipantInTheGroup);
+router
+  .route("/group/remove/:particpantId")
+  .patch(removeParticipantFromTheGroup);
 
 export default router;
