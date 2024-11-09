@@ -407,6 +407,49 @@ const removeParticipantFromTheGroup = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, payload, "Participant removed successfully"));
 });
 
+const leaveGroupChat = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  const groupChat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    isGroupChat: true,
+  });
+  if (!groupChat) throw new ApiError(404, "GroupChat does not exits");
+
+  if (!groupChat.participants.includes(req.user?._id.toString()))
+    throw new ApiError(400, "You are not a participant in the group");
+
+  const updatedChat = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $pull: {
+        participants: req.user?._id,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const payload = (
+    await Chat.aggregate([
+      {
+        $match: {
+          _id: updatedChat._id,
+        },
+      },
+      ...commonAggregationPipeline(),
+    ])
+  )[0];
+  if (!payload) throw new ApiError(500, "Internal sever error");
+
+  emitSocketEvent(req, req.user?._id, ChatEventEnum.LEAVE_CHAT_EVENT, payload);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, payload, "Group left successfully"));
+});
+
 export {
   createOrGetSingleChat,
   deleteSingleChat,
@@ -414,4 +457,5 @@ export {
   renameGrouphat,
   addNewParticipantInTheGroup,
   removeParticipantFromTheGroup,
+  leaveGroupChat,
 };
