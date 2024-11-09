@@ -450,6 +450,41 @@ const leaveGroupChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, payload, "Group left successfully"));
 });
 
+const deleteGroupChat = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+
+  const groupChat = await Chat.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(chatId),
+        isGroupChat: true,
+      },
+    },
+    ...commonAggregationPipeline(),
+  ]);
+  if (!groupChat.length) throw new ApiError(404, "GroupChat doesnot exists");
+
+  if (groupChat.admin.toString() !== req.user?._id)
+    throw new ApiError(400, "You are not the admin");
+
+  await Chat.findByIdAndDelete(chatId);
+  await deleteCascadeChatMessages(chatId);
+
+  deletedGroup.participants.forEach((participant) => {
+    if (participant.toString === req.user?._id.toString()) return;
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.LEAVE_CHAT_EVENT,
+      groupChat
+    );
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "GroupChat deleted successfully"));
+});
+
 export {
   createOrGetSingleChat,
   deleteSingleChat,
@@ -458,4 +493,5 @@ export {
   addNewParticipantInTheGroup,
   removeParticipantFromTheGroup,
   leaveGroupChat,
+  deleteGroupChat,
 };

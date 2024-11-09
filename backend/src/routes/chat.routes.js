@@ -4,6 +4,7 @@ import {
   addNewParticipantInTheGroup,
   createGroupChat,
   createOrGetSingleChat,
+  deleteGroupChat,
   deleteSingleChat,
   leaveGroupChat,
   removeParticipantFromTheGroup,
@@ -22,6 +23,7 @@ router.route("/group/add/:particpantId").patch(addNewParticipantInTheGroup);
 router
   .route("/group/remove/:particpantId")
   .patch(removeParticipantFromTheGroup);
-router.route("/group/leave").patch(leaveGroupChat);
+router.route("/group/leave/:chatId").patch(leaveGroupChat);
+router.route("/group/delete/:chatId").delete(deleteGroupChat);
 
 export default router;
