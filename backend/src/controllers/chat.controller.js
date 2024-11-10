@@ -529,6 +529,26 @@ const searchAvailableUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, users, "Users fetched successfully"));
 });
 
+const getAllChats = asyncHandler(async (req, res) => {
+  const chats = await Chat.aggregate([
+    {
+      $match: {
+        participants: { $eleMatch: { $eq: req.user?._id } },
+      },
+    },
+    {
+      $sort: {
+        updatedAt: -1,
+      },
+    },
+    ...commonAggregationPipeline(),
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, chats || [], "Chats fetched successfully"));
+});
+
 export {
   createOrGetSingleChat,
   deleteSingleChat,
@@ -540,4 +560,5 @@ export {
   deleteGroupChat,
   getGroupChatDetails,
   searchAvailableUser,
+  getAllChats,
 };
