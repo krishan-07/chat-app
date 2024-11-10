@@ -485,6 +485,24 @@ const deleteGroupChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "GroupChat deleted successfully"));
 });
 
+const getGroupChatDetails = asyncHandler(async (req, res) => {
+  const { chatId } = req.params;
+  const groupChat = await Chat.aggregate([
+    {
+      $match: {
+        _id: mongoose.Types.ObjectId(chatId),
+        isGroupChat: true,
+      },
+    },
+    ...commonAggregationPipeline(),
+  ]);
+  if (!groupChat.length) throw new ApiError(404, "GroupChat doesnot exists");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, groupChat[0], "GroupChat fetched successfully"));
+});
+
 export {
   createOrGetSingleChat,
   deleteSingleChat,
@@ -494,4 +512,5 @@ export {
   removeParticipantFromTheGroup,
   leaveGroupChat,
   deleteGroupChat,
+  getGroupChatDetails,
 };
