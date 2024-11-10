@@ -10,11 +10,13 @@ import {
   leaveGroupChat,
   removeParticipantFromTheGroup,
   renameGrouphat,
+  searchAvailableUser,
 } from "../controllers/chat.controller.js";
 
 const router = Router();
 router.use(verifyJWT);
 
+router.route("/").get(searchAvailableUser);
 router.route("/c/:receiverId").post(createOrGetSingleChat);
 router.route("/remove/:chatId").delete(deleteSingleChat);
 

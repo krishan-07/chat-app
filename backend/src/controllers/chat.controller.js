@@ -503,6 +503,32 @@ const getGroupChatDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, groupChat[0], "GroupChat fetched successfully"));
 });
 
+const searchAvailableUser = asyncHandler(async (req, res) => {
+  const users = await User.aggregate([
+    {
+      $match: {
+        _id: {
+          $ne: req.user?._id,
+        },
+      },
+    },
+    {
+      $project: {
+        username: 1,
+        fullname: 1,
+        avatar: 1,
+        email: 1,
+      },
+    },
+  ]);
+
+  if (!users.length) throw new ApiError(500, "Internal server error");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "Users fetched successfully"));
+});
+
 export {
   createOrGetSingleChat,
   deleteSingleChat,
@@ -513,4 +539,5 @@ export {
   leaveGroupChat,
   deleteGroupChat,
   getGroupChatDetails,
+  searchAvailableUser,
 };
