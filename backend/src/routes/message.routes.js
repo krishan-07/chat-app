@@ -12,8 +12,9 @@ router.use(verifyJWT);
 
 router
   .route("/:chatId")
-  .get(getAllMessages)
+  .get(mongoIdPathVariableValidator("chatId"), getAllMessages)
   .post(
+    mongoIdPathVariableValidator("chatId"),
     upload.fields([
       {
         name: "attachments",
@@ -22,6 +23,12 @@ router
     ]),
     sendMessage
   );
-router.route("/:chatId/:messageId").delete(deleteMessage);
+router
+  .route("/:chatId/:messageId")
+  .delete(
+    mongoIdPathVariableValidator("chatId"),
+    mongoIdPathVariableValidator("messageId"),
+    deleteMessage
+  );
 
 export default router;
