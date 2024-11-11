@@ -6,6 +6,7 @@ import {
   sendMessage,
 } from "../controllers/message.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
+import { mongoIdPathVariableValidator } from "../validators/mongodb.validators.js";
 
 const router = Router();
 router.use(verifyJWT);
