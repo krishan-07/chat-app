@@ -58,9 +58,9 @@ import chatRouter from "./routes/chat.routes.js";
 import passport from "passport";
 
 //routes declaration
-app.use("/api/v1/user", userRouter);
-app.use("/api/v1/message", messageRouter);
-app.use("/api/v1/chat", chatRouter);
+app.use("/api/v1/users", userRouter);
+app.use("/api/v1/messages", messageRouter);
+app.use("/api/v1/chats", chatRouter);
 
 initializeSocketId(io);
 
