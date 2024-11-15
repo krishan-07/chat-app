@@ -1,7 +1,10 @@
+import "bootstrap/dist/css/bootstrap.min.css";
+import LoginPage from "./pages/login";
+
 function App() {
   return (
     <>
-      <h1>hiiiiiiiii</h1>
+      <LoginPage />
     </>
   );
 }
