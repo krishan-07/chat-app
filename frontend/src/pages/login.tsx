@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Container, Stack } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import { FaGithub } from "react-icons/fa";
+import { FaGithub, FaLock } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
 
 function LoginPage() {
@@ -22,7 +22,10 @@ function LoginPage() {
   const handlelogin = () => {};
   return (
     <Container className="my-4" style={{ maxWidth: "400px" }}>
-      <h2 className="text-center mb-3 fw-bold">Login</h2>
+      <div className="center mb-4 fw-bold">
+        <FaLock size={30} />
+        <h2 className="ms-2 mb-0">Login</h2>
+      </div>
       <Form onSubmit={handlelogin}>
         <Stack gap={1}>
           <Form.Group className="mb-3" controlId="email">
