@@ -1,3 +1,6 @@
+import { AxiosResponse } from "axios";
+import { ApiInterface } from "../interface/api";
+
 export const isBrowser = typeof window !== undefined;
 
 export class LocalStorage {
@@ -29,3 +32,50 @@ export class LocalStorage {
     localStorage.clear();
   }
 }
+
+export const requestHandler = async (
+  api: () => Promise<AxiosResponse<ApiInterface, any>>,
+  setLoading: (loading: boolean) => void,
+  onSuccess: (data: ApiInterface) => void,
+  onError: (error: any) => void
+) => {
+  setLoading && setLoading(true);
+  try {
+    const response = await api();
+    const { data } = response;
+    if (data?.success) {
+      // Call the onSuccess callback with the response data
+      onSuccess(data);
+    }
+  } catch (error: any) {
+    if ([401, 403].includes(error?.status)) {
+      //clear localStorage on authentication issues
+      LocalStorage.clear();
+      if (isBrowser) window.location.href = "/login"; //redirect to login Page
+    }
+    onError(extractErrorMessageFromHTMLDoc(error?.response?.data));
+  } finally {
+    setLoading && setLoading(false);
+  }
+};
+
+const extractErrorMessageFromHTMLDoc = (data: string): string => {
+  let errorMessage: string;
+  // Parse the HTML string into a Document
+  const parser = new DOMParser();
+  const doc: Document = parser.parseFromString(data, "text/html");
+
+  // Query the <pre> tag
+  const preElement: HTMLPreElement | null = doc.querySelector("pre");
+
+  if (preElement) {
+    // Get the content before the <br> tag
+    let contentBeforeBr: string = preElement.innerHTML.split("<br>")[0].trim();
+    contentBeforeBr = contentBeforeBr.replace(/^Error:\s*/, "").trim();
+    errorMessage = contentBeforeBr;
+  } else {
+    errorMessage = "Something went wrong";
+  }
+
+  return errorMessage;
+};

@@ -19,8 +19,8 @@ apiClient.interceptors.request.use(
   }
 );
 
-const loginUser = (data: { username: string; password: string }) => {
-  return apiClient.post("/user/login", data);
+const loginUser = (data: { field: string; password: string }) => {
+  return apiClient.post("/users/login", data);
 };
 
 export { loginUser };

@@ -1,15 +1,17 @@
-import React, { useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { Container, Stack } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { FaGithub, FaLock } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "../context/AuthContext";
 
 function LoginPage() {
   const [data, setData] = useState({
-    email: "",
+    field: "",
     password: "",
   });
+  const { login } = useAuth();
 
   const handleDataChange =
     (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -19,21 +21,31 @@ function LoginPage() {
       });
     };
 
-  const handlelogin = () => {};
+  const handlelogin = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (data.field !== "" && data.password !== "") {
+      await login(data);
+      return;
+    }
+
+    alert("Please enter the fields");
+  };
+
   return (
     <Container className="my-4" style={{ maxWidth: "400px" }}>
       <div className="center mb-4 fw-bold">
         <FaLock size={30} />
         <h2 className="ms-2 mb-0">Login</h2>
       </div>
-      <Form onSubmit={handlelogin}>
+      <Form onSubmit={handlelogin} action="submit">
         <Stack gap={1}>
           <Form.Group className="mb-3" controlId="email">
             <Form.Label>Email address or username</Form.Label>
             <Form.Control
               type="email"
               placeholder="Enter email or username"
-              onChange={handleDataChange("email")}
+              onChange={handleDataChange("field")}
             />
           </Form.Group>
           <Form.Group className="mb-3" controlId="formBasicPassword">
