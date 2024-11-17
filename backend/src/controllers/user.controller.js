@@ -18,8 +18,8 @@ import fs from "fs";
 const generateAccessAndRefreshToken = async (userId) => {
   try {
     const user = await User.findById(userId);
-    const accessToken = user.generateAccessToken();
-    const refreshToken = user.generateRefreshToken();
+    const accessToken = await user.generateAccessToken();
+    const refreshToken = await user.generateRefreshToken();
 
     user.refreshToken = refreshToken;
     await user.save({ validateBeforeSave: false });
@@ -97,7 +97,7 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!isUserExists) throw new ApiError(404, "User not found");
 
-  if (user.loginType !== UserLoginType.EMAIL_PASSWORD) {
+  if (isUserExists.loginType !== UserLoginType.EMAIL_PASSWORD) {
     // If user is registered with some other method, we will ask him/her to use the same method as registered.
     // This shows that if user is registered with methods other than email password, he/she will not be able to login with password. Which makes password field redundant for the SSO
     throw new ApiError(
@@ -108,6 +108,11 @@ const loginUser = asyncHandler(async (req, res) => {
         user.loginType?.toLowerCase() +
         " login option to access your account."
     );
+  }
+  const isPasswordValid = await isUserExists.isPasswordCorrect(password);
+
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid password");
   }
 
   const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
