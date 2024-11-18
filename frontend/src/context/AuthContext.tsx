@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { UserInterface } from "../interface/user";
 import { LocalStorage, requestHandler } from "../utils";
-import { loginUser } from "../api";
+import { loginUser, registerUser } from "../api";
 import { useNavigate } from "react-router-dom";
 
 const AuthContext = createContext<{
@@ -52,7 +52,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const register = async () => {};
+  const register = async (data: {
+    email: string;
+    fullname: string;
+    password: string;
+    username: string;
+  }) => {
+    await requestHandler(
+      async () => await registerUser(data),
+      setIsLoading,
+      (res) => {
+        const { data } = res;
+        setUser(data.user);
+        setToken(data.accessToken);
+        LocalStorage.set("user", data.user);
+        LocalStorage.set("token", data.accessToken);
+        navigate("/chat");
+      },
+      alert
+    );
+  };
 
   const logout = async () => {};
 

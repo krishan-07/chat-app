@@ -23,4 +23,13 @@ const loginUser = (data: { field: string; password: string }) => {
   return apiClient.post("/users/login", data);
 };
 
-export { loginUser };
+const registerUser = (data: {
+  email: string;
+  fullname: string;
+  username: string;
+  password: string;
+}) => {
+  return apiClient.post("/users/register", data);
+};
+
+export { loginUser, registerUser };

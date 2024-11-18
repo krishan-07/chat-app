@@ -1,16 +1,18 @@
-import React, { useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { Button, Container, Form, Stack } from "react-bootstrap";
 import { FaGithub, FaRegUser } from "react-icons/fa";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "../context/AuthContext";
 
 function RegisterPage() {
   const [data, setData] = useState({
     email: "",
+    fullname: "",
     password: "",
-    username: "",
     confirmPassword: "",
   });
 
+  const { register } = useAuth();
   const handleDataChange =
     (name: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setData({
@@ -18,7 +20,26 @@ function RegisterPage() {
         [name]: e.target.value,
       });
     };
-  const handleRegister = () => {};
+
+  const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    if (data.email !== "" && data.fullname !== "") {
+      if (data.password !== data.confirmPassword) {
+        alert("Password didn't match");
+        return;
+      }
+      await register({
+        email: data.email,
+        fullname: data.fullname,
+        username: data.email.split("@")[0],
+        password: data.password,
+      });
+      return;
+    }
+
+    alert("Please enter the fields");
+  };
 
   return (
     <>
@@ -27,7 +48,7 @@ function RegisterPage() {
           <FaRegUser size={30} />
           <h2 className="ms-2 mb-0">Register</h2>
         </div>
-        <Form onSubmit={handleRegister}>
+        <Form onSubmit={handleRegister} action="submit">
           <Stack gap={1}>
             <Form.Group className="mb-3" controlId="email">
               <Form.Label>Email address</Form.Label>
@@ -38,11 +59,11 @@ function RegisterPage() {
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="username">
-              <Form.Label>Username</Form.Label>
+              <Form.Label>Fullname</Form.Label>
               <Form.Control
-                type="email"
+                type="name"
                 placeholder="Enter username"
-                onChange={handleDataChange("username")}
+                onChange={handleDataChange("fullname")}
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="password">
