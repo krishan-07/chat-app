@@ -1,4 +1,5 @@
 import { Router } from "express";
+import passport from "passport";
 import { upload } from "../middleware/multer.middleware.js";
 import {
   changePassword,
@@ -14,7 +15,6 @@ import {
   updateUserDetails,
 } from "../controllers/user.controller.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
-import passport from "passport";
 
 const router = Router();
 
@@ -45,22 +45,21 @@ router.route("/google").get(
     res.send("redirecting to google...");
   }
 );
-
-router.route("/github").get(
-  passport.authenticate("github", {
-    scope: ["profile", "email"],
-  }),
-  (req, res) => {
-    res.send("redirecting to github...");
-  }
-);
-
 router
   .route("/google/callback")
   .get(passport.authenticate("google"), handleSocialLogin);
 
-router
-  .route("/github/callback")
-  .get(passport.authenticate("github"), handleSocialLogin);
+router.route("/auth/github").get(
+  passport.authenticate("github", {
+    scope: ["read:user user:email"],
+    failureRedirect: "http://localhost:3000/login",
+  })
+);
+router.route("/auth/github/callback").get(
+  passport.authenticate("github", {
+    failureRedirect: "http://localhost:3000/login",
+  }),
+  handleSocialLogin
+);
 
 export default router;

@@ -5,6 +5,8 @@ import { createServer } from "http";
 import session from "express-session";
 import { Server } from "socket.io";
 import { initializeSocketId } from "./socket/index.js";
+import "./passport/index.js";
+import passport from "passport";
 
 const app = express();
 
@@ -55,7 +57,6 @@ app.use(passport.session()); // persistent login sessions
 import userRouter from "./routes/user.routes.js";
 import messageRouter from "./routes/message.routes.js";
 import chatRouter from "./routes/chat.routes.js";
-import passport from "passport";
 
 //routes declaration
 app.use("/api/v1/users", userRouter);

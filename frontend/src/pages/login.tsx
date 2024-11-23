@@ -1,10 +1,10 @@
-import React, { FormEvent, useState } from "react";
+import React, { FormEvent, useEffect, useState } from "react";
 import { Container, Stack } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
-import { FaGithub, FaLock } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
+import { FaLock } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
+import { GoogleAndGitHubSignInButtons } from "../components/button";
 
 function LoginPage() {
   const [data, setData] = useState({
@@ -60,23 +60,14 @@ function LoginPage() {
             Submit
           </Button>
           <Form.Text className="text-light center mt-2">
-            Don't have an acoount?{" "}
+            Don't have an acoount?
             <a href="/register" className="ms-2">
               Register
             </a>
           </Form.Text>
         </Stack>
         <hr className="my-4" />
-        <Stack gap={3}>
-          <Button type="button" variant="light" className="center">
-            <FcGoogle size={30} className="me-2" />
-            Sign in with Google
-          </Button>
-          <Button type="button" variant="light" className="center">
-            <FaGithub size={30} className="me-2" />
-            Sign in with GitHub
-          </Button>
-        </Stack>
+        <GoogleAndGitHubSignInButtons text="in" />
       </Form>
     </Container>
   );

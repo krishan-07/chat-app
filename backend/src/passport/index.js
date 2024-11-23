@@ -100,23 +100,21 @@ try {
             );
           else {
             const userNameExists = await User.findOne({
-              username: profile?.username,
+              username: profile?._json.login,
             });
 
             const newUser = await User.create({
               email: profile._json.email,
-              password: profile._json.sub,
+              password: profile._json.node_id,
               username: userNameExists
                 ? profile._json.email?.split("@")[0]
-                : profile?.username,
-              fullname: userNameExists
-                ? profile._json.email?.split("@")[0]
-                : profile?.username,
-              avatar: profile._json.picture,
+                : profile?._json.login,
+              fullname: profile._json.name,
+              avatar: profile._json.avatar_url,
               role: UserRolesEnum.USER,
               loginType: UserLoginType.GITHUB,
             });
-            if (newUser) next(null, user);
+            if (newUser) next(null, newUser);
             else
               next(new ApiError(500, "Error while registering the user"), null);
           }
