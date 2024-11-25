@@ -79,3 +79,11 @@ const extractErrorMessageFromHTMLDoc = (data: string): string => {
 
   return errorMessage;
 };
+
+export const extractParamsfromSearchUrl = (url: string, param: string) => {
+  const urlObj = new URL(url);
+  const params: URLSearchParams = urlObj.searchParams;
+  const result = params.get(param);
+
+  return result;
+};

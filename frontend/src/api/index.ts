@@ -32,4 +32,8 @@ const registerUser = (data: {
   return apiClient.post("/users/register", data);
 };
 
-export { loginUser, registerUser };
+const getCurrentUser = () => {
+  return apiClient.get("/users/current-user");
+};
+
+export { loginUser, registerUser, getCurrentUser };

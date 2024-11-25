@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { UserInterface } from "../interface/user";
 import { LocalStorage, requestHandler } from "../utils";
-import { loginUser, registerUser } from "../api";
+import { getCurrentUser, loginUser, registerUser } from "../api";
 import { useNavigate } from "react-router-dom";
+import Loading from "../components/Loading";
 
 const AuthContext = createContext<{
   user: UserInterface | null;
@@ -15,12 +16,14 @@ const AuthContext = createContext<{
     password: string;
   }) => Promise<void>;
   logout: () => Promise<void>;
+  Auth: (accessToken: any) => Promise<void>;
 }>({
   user: null,
   token: null,
   login: async () => {},
   register: async () => {},
   logout: async () => {},
+  Auth: async () => {},
 });
 
 //create a hook for AuthContext
@@ -75,6 +78,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const logout = async () => {};
 
+  const Auth = async (accessToken: any) => {
+    await requestHandler(
+      async () => await getCurrentUser(),
+      setIsLoading,
+      (res) => {
+        const { data } = res;
+        setUser(data);
+        setToken(accessToken);
+        LocalStorage.set("user", data);
+        LocalStorage.set("token", accessToken);
+        navigate("/chat");
+      },
+      alert
+    );
+  };
+
   useEffect(() => {
     setIsLoading(true);
     const _user = LocalStorage.get("user");
@@ -88,8 +107,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <>
-      <AuthContext.Provider value={{ user, login, token, register, logout }}>
-        {isLoading ? <h1>loading...</h1> : children}
+      <AuthContext.Provider
+        value={{ user, login, token, register, logout, Auth }}
+      >
+        {isLoading ? <Loading /> : children}
       </AuthContext.Provider>
     </>
   );
