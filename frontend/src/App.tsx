@@ -1,9 +1,9 @@
 import "bootstrap/dist/css/bootstrap.min.css";
-import RegisterPage from "./pages/register";
-import LoginPage from "./pages/login";
+import RegisterPage from "./pages/Register";
+import LoginPage from "./pages/Login";
 import { useAuth } from "./context/AuthContext";
 import { Navigate, Route, Routes } from "react-router-dom";
-import ChatPage from "./pages/chat";
+import ChatPage from "./pages/Chat";
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
 import Loading from "./components/Loading";

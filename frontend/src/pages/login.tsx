@@ -1,10 +1,10 @@
-import React, { FormEvent, useEffect, useState } from "react";
+import React, { FormEvent, useState } from "react";
 import { Container, Stack } from "react-bootstrap";
 import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import { FaLock } from "react-icons/fa";
 import { useAuth } from "../context/AuthContext";
-import { GoogleAndGitHubSignInButtons } from "../components/button";
+import { GoogleAndGitHubSignInButtons } from "../components/Button";
 
 function LoginPage() {
   const [data, setData] = useState({
