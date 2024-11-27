@@ -36,4 +36,8 @@ const getCurrentUser = () => {
   return apiClient.get("/users/current-user");
 };
 
-export { loginUser, registerUser, getCurrentUser };
+const logoutUser = () => {
+  return apiClient.post("/users/logout");
+};
+
+export { loginUser, registerUser, getCurrentUser, logoutUser };

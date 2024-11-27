@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { UserInterface } from "../interface/user";
 import { LocalStorage, requestHandler } from "../utils";
-import { getCurrentUser, loginUser, registerUser } from "../api";
+import { getCurrentUser, loginUser, logoutUser, registerUser } from "../api";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
 
@@ -76,7 +76,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const logout = async () => {};
+  const logout = async () => {
+    await requestHandler(
+      async () => await logoutUser(),
+      setIsLoading,
+      () => {
+        setUser(null);
+        setToken(null);
+        LocalStorage.clear();
+        navigate("/login");
+      },
+      alert
+    );
+  };
 
   const Auth = async (accessToken: any) => {
     await requestHandler(
