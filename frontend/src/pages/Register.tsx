@@ -1,8 +1,9 @@
 import React, { FormEvent, useState } from "react";
 import { Button, Container, Form, Stack } from "react-bootstrap";
-import { FaGithub, FaRegUser } from "react-icons/fa";
-import { FcGoogle } from "react-icons/fc";
+import { FaRegUser } from "react-icons/fa";
+
 import { useAuth } from "../context/AuthContext";
+import { GoogleAndGitHubSignInButtons } from "../components/Button";
 
 function RegisterPage() {
   const [data, setData] = useState({
@@ -92,17 +93,7 @@ function RegisterPage() {
               </a>
             </Form.Text>
           </Stack>
-          <hr className="my-4" />
-          <Stack gap={3}>
-            <Button type="button" variant="light" className="center">
-              <FcGoogle size={30} className="me-2" />
-              Sign in with Google
-            </Button>
-            <Button type="button" variant="light" className="center">
-              <FaGithub size={30} className="me-2" />
-              Sign in with GitHub
-            </Button>
-          </Stack>
+          <GoogleAndGitHubSignInButtons />
         </Form>
       </Container>
     </>

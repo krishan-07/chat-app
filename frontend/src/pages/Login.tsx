@@ -66,8 +66,8 @@ function LoginPage() {
             </a>
           </Form.Text>
         </Stack>
-        <hr className="my-4" />
-        <GoogleAndGitHubSignInButtons text="in" />
+
+        <GoogleAndGitHubSignInButtons />
       </Form>
     </Container>
   );
