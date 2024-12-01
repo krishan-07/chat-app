@@ -40,4 +40,29 @@ const logoutUser = () => {
   return apiClient.post("/users/logout");
 };
 
-export { loginUser, registerUser, getCurrentUser, logoutUser };
+const updateAvatar = (file: File) => {
+  const formData = new FormData();
+  formData.append("avatar", file);
+
+  return apiClient.patch("/users/update-avatar", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+const updateUserDetails = (fullname: string = "", email: string = "") => {
+  return apiClient.patch("/users/update-account", {
+    fullname: fullname,
+    email: email,
+  });
+};
+
+export {
+  loginUser,
+  registerUser,
+  getCurrentUser,
+  logoutUser,
+  updateAvatar,
+  updateUserDetails,
+};

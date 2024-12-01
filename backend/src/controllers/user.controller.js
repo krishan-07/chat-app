@@ -233,7 +233,7 @@ const changePassword = asyncHandler(async (req, res) => {
 
 const updateUserDetails = asyncHandler(async (req, res) => {
   const { fullname, email } = req.body;
-  if ([fullname, email].some((data) => data?.trim() === "" || !data))
+  if ([fullname, email].every((data) => !data || data?.trim() === ""))
     throw new ApiError(400, "Please provide the necessary fields");
 
   const user = await User.findByIdAndUpdate(

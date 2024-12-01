@@ -88,10 +88,26 @@ export const extractParamsfromSearchUrl = (url: string, param: string) => {
   return result;
 };
 
-export async function blobUrlToBlob(blobUrl: string): Promise<Blob> {
+export const blobUrlToBlob = async (blobUrl: string): Promise<Blob> => {
   const response = await fetch(blobUrl);
   if (!response.ok) {
     throw new Error("Failed to fetch the Blob from the Blob URL");
   }
   return await response.blob();
-}
+};
+
+export const blobUrlToFile = async (
+  blobUrl: string,
+  fileName: string = "image.png"
+): Promise<File> => {
+  const response = await fetch(blobUrl);
+
+  if (!response.ok)
+    throw new Error(`Failed to fetch blob from URL: ${blobUrl}`);
+
+  const blob = await response.blob();
+
+  const file = new File([blob], fileName, { type: blob.type });
+
+  return file;
+};
