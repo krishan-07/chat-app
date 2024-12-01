@@ -14,3 +14,26 @@ body {
   justify-content: center;
   align-items: center;
 }
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.d-hidden {
+  opacity: 0;
+}
+
+.Crop-Controls {
+  margin-bottom: 10px;
+}
+.Crop-Controls > * {
+  margin-bottom: 3px;
+}
+
+img {
+  max-width: 100%;
+}
+
+.modal-content {
+  background-color: #212529 !important;
+}

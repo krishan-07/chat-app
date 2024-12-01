@@ -6,8 +6,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import ChatPage from "./pages/Chat";
 import PrivateRoute from "./components/PrivateRoute";
 import PublicRoute from "./components/PublicRoute";
-import Loading from "./components/Loading";
 import Redirect from "./pages/Redirect";
+import PostRegister from "./pages/PostRegister";
 
 function App() {
   const { user, token } = useAuth();
@@ -48,6 +48,7 @@ function App() {
         }
       ></Route>
       <Route path="/redirect" element={<Redirect />}></Route>
+      <Route path="/register-redirect" element={<PostRegister />}></Route>
 
       <Route path="*" element={<p>404 Not found</p>} />
     </Routes>

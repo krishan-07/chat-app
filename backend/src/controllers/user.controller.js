@@ -72,9 +72,21 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (!user) throw new ApiError(500, "Error while registering the user");
 
-  return res
-    .status(201)
-    .json(new ApiResponse(201, user, "User registered successfully"));
+  const { refreshToken, accessToken } = await generateAccessAndRefreshToken(
+    user._id
+  );
+
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        user,
+        accessToken,
+        refreshToken,
+      },
+      "User registered successfully"
+    )
+  );
 });
 
 const loginUser = asyncHandler(async (req, res) => {

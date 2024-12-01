@@ -8,7 +8,7 @@ import { GoogleAndGitHubSignInButtons } from "../components/Button";
 function RegisterPage() {
   const [data, setData] = useState({
     email: "",
-    fullname: "",
+    username: "",
     password: "",
     confirmPassword: "",
   });
@@ -25,15 +25,15 @@ function RegisterPage() {
   const handleRegister = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    if (data.email !== "" && data.fullname !== "") {
+    if (data.email !== "" && data.username !== "") {
       if (data.password !== data.confirmPassword) {
         alert("Password didn't match");
         return;
       }
       await register({
         email: data.email,
-        fullname: data.fullname,
-        username: data.email.split("@")[0],
+        username: data.username,
+        fullname: data.email.split("@")[0],
         password: data.password,
       });
       return;
@@ -60,11 +60,11 @@ function RegisterPage() {
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="username">
-              <Form.Label>Fullname</Form.Label>
+              <Form.Label>username</Form.Label>
               <Form.Control
                 type="name"
                 placeholder="Enter username"
-                onChange={handleDataChange("fullname")}
+                onChange={handleDataChange("username")}
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="password">
