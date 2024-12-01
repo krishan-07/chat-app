@@ -87,3 +87,11 @@ export const extractParamsfromSearchUrl = (url: string, param: string) => {
 
   return result;
 };
+
+export async function blobUrlToBlob(blobUrl: string): Promise<Blob> {
+  const response = await fetch(blobUrl);
+  if (!response.ok) {
+    throw new Error("Failed to fetch the Blob from the Blob URL");
+  }
+  return await response.blob();
+}
