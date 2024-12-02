@@ -59,12 +59,17 @@ function PostRegister() {
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    if (imgSrc) await updateAvatar(await blobUrlToFile(imgSrc));
+    try {
+      if (imgSrc) await updateAvatar(await blobUrlToFile(imgSrc));
+      if (fullname !== user?.fullname) await updateUserDetails(fullname, "");
 
-    if (fullname !== user?.fullname) await updateUserDetails(fullname, "");
+      const newUser = await getCurrentUser();
 
-    const newUser = await getCurrentUser();
-    LocalStorage.set("user", newUser.data.data);
+      LocalStorage.set("user", newUser.data.data);
+    } catch (error) {
+      console.log(error);
+      alert(error);
+    }
     setIsLoading(false);
 
     navigate("/chat");

@@ -233,26 +233,29 @@ const changePassword = asyncHandler(async (req, res) => {
 
 const updateUserDetails = asyncHandler(async (req, res) => {
   const { fullname, email } = req.body;
-  if ([fullname, email].every((data) => !data || data?.trim() === ""))
+  if (!fullname?.trim() && !email?.trim())
     throw new ApiError(400, "Please provide the necessary fields");
 
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(req.user?._id);
+  const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
-        fullname,
-        email,
+        fullname: fullname.trim() || user.fullname,
+        email: email.trim() || user.email,
       },
     },
     {
       new: true,
     }
   ).select("-password");
-  if (!user || user.length === 0) throw new ApiError(400, "User not found");
+  if (!user) throw new ApiError(400, "User not found");
 
   return res
     .status(200)
-    .json(new ApiResponse(200, user, "User details updated successfully"));
+    .json(
+      new ApiResponse(200, updatedUser, "User details updated successfully")
+    );
 });
 
 const updateAvatar = asyncHandler(async (req, res) => {
