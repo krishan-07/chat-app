@@ -117,11 +117,11 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
         isGroupChat: false,
         $and: [
           {
-            participants: { $eleMatch: { $eq: req.user?._id } },
+            participants: { $elemMatch: { $eq: req.user?._id } },
           },
           {
             participants: {
-              $eleMatch: { $eq: new mongoose.Types.ObjectId(receiverId) },
+              $elemMatch: { $eq: new mongoose.Types.ObjectId(receiverId) },
             },
           },
         ],
@@ -140,6 +140,7 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
     name: new mongoose.Types.ObjectId(receiverId),
     participants: [req.user?._id, new mongoose.Types.ObjectId(receiverId)],
     admin: req.user?._id,
+    isGroupChat: false,
   });
 
   const createdChat = await Chat.aggregate([
@@ -166,7 +167,7 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
     {
       $unwind: "$name",
     },
-    ...commonAggregationPipeline,
+    ...commonAggregationPipeline(),
   ]);
 
   const payload = createdChat[0];
@@ -220,13 +221,13 @@ const createGroupChat = asyncHandler(async (req, res) => {
       "Participants array should not contain the group creator"
     );
 
-  const members = [new Set([...participants, req.user?._id])];
+  const members = [...new Set([...participants, req.user?._id])];
 
-  if (members.length < 3)
-    throw new ApiError(400, "A group should contain more than 3 members");
+  if (members.length < 2)
+    throw new ApiError(400, "A group should contain more than 1 members");
 
   const groupChat = await Chat.create({
-    name: name || "Group chat",
+    name: name.trim() || "Group chat",
     isGroupChat: true,
     participants: members,
     admin: req.user?._id,
