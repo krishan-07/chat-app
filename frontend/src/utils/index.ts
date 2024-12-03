@@ -35,7 +35,7 @@ export class LocalStorage {
 
 export const requestHandler = async (
   api: () => Promise<AxiosResponse<ApiInterface, any>>,
-  setLoading: (loading: boolean) => void,
+  setLoading: (loading: boolean) => void = () => {},
   onSuccess: (data: ApiInterface) => void,
   onError: (error: any) => void
 ) => {

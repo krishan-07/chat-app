@@ -58,6 +58,23 @@ const updateUserDetails = (fullname: string = "", email: string = "") => {
   });
 };
 
+const getUserByQuery = (query: string) => {
+  return apiClient.get("/users/search", {
+    params: { query },
+  });
+};
+
+const createSingleChat = (userId: string) => {
+  return apiClient.post(`/chats/c/${userId}`);
+};
+
+const createGroupChat = (name: string, participants: string[]) => {
+  return apiClient.post("/chats/group", {
+    name,
+    participants,
+  });
+};
+
 export {
   loginUser,
   registerUser,
@@ -65,4 +82,7 @@ export {
   logoutUser,
   updateAvatar,
   updateUserDetails,
+  getUserByQuery,
+  createSingleChat,
+  createGroupChat,
 };
