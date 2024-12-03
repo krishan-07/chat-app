@@ -353,6 +353,35 @@ const getUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "User fetched successfully"));
 });
 
+const getUserByQuery = asyncHandler(async (req, res) => {
+  const { query } = req.query;
+
+  if (!query || !query.trim())
+    throw new ApiError(400, "Provide a valid query ");
+
+  const users = await User.aggregate([
+    {
+      $match: {
+        _id: {
+          $ne: req.user?._id,
+        },
+        username: { $regex: `^${query}`, $options: "i" },
+      },
+    },
+    {
+      $project: {
+        username: 1,
+        fullname: 1,
+        avatar: 1,
+      },
+    },
+  ]);
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, users, "User fetched successfully"));
+});
+
 const handleSocialLogin = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user?._id);
 
@@ -385,5 +414,6 @@ export {
   removeAvatar,
   getCurrentUser,
   getUser,
+  getUserByQuery,
   handleSocialLogin,
 };

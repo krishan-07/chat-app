@@ -5,6 +5,7 @@ import {
   changePassword,
   getCurrentUser,
   getUser,
+  getUserByQuery,
   handleSocialLogin,
   loginUser,
   logoutUser,
@@ -25,6 +26,7 @@ router.route("/refresh-token").post(refreshAccessToken);
 router.route("/user/:userId").get(getUser);
 
 //secured routes
+router.route("/search").get(verifyJWT, getUserByQuery);
 router.route("/logout").post(verifyJWT, logoutUser);
 router.route("/change-password").post(verifyJWT, changePassword);
 
