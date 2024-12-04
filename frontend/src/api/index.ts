@@ -75,6 +75,10 @@ const createGroupChat = (name: string, participants: string[]) => {
   });
 };
 
+const getAllChats = () => {
+  return apiClient.get("/chats");
+};
+
 export {
   loginUser,
   registerUser,
@@ -85,4 +89,5 @@ export {
   getUserByQuery,
   createSingleChat,
   createGroupChat,
+  getAllChats,
 };

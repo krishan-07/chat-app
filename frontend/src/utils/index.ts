@@ -111,3 +111,45 @@ export const blobUrlToFile = async (
 
   return file;
 };
+
+export const formatDate = (dateString: string): string => {
+  const inputDate = new Date(dateString);
+  const now = new Date();
+
+  // Helper functions
+  const isToday = (date: Date) => {
+    return date.toDateString() === now.toDateString();
+  };
+
+  const isYesterday = (date: Date) => {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    return date.toDateString() === yesterday.toDateString();
+  };
+
+  // Format time in "HH:MM AM/PM"
+  const formatTime = (date: Date) => {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const formattedHours = hours % 12 || 12; // Convert 0 to 12 for AM/PM format
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+  };
+
+  // Format date in "MM/DD/YYYY"
+  const formatDateOnly = (date: Date) => {
+    const day = date.getDate();
+    const month = date.getMonth() + 1; // Months are 0-indexed
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
+  };
+
+  if (isToday(inputDate)) {
+    return formatTime(inputDate); // Show time if it's today
+  } else if (isYesterday(inputDate)) {
+    return "Yesterday"; // Show "Yesterday" if it's yesterday
+  } else {
+    return formatDateOnly(inputDate); // Show date if it's older than yesterday
+  }
+};

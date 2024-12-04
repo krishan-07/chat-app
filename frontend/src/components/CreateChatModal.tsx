@@ -1,12 +1,12 @@
 import React, { useState } from "react";
-import { Button, Form, Modal, Stack } from "react-bootstrap";
+import { Button, Form, Modal, Spinner, Stack } from "react-bootstrap";
 import { IoClose } from "react-icons/io5";
 import { getUserByQuery } from "../api";
 import { UserInterface } from "../interface/user";
 import AsyncSelect from "react-select/async";
 import { CustomOption, customStyles } from "./CustomOption";
 import { MultiValue, SingleValue } from "react-select";
-import { requestHandler } from "../utils";
+import { LocalStorage, requestHandler } from "../utils";
 import {
   createSingleChat as singleChat,
   createGroupChat as groupChat,
@@ -78,6 +78,7 @@ const fetchUsers = async (query: string): Promise<UserOption[]> => {
 const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
   const [selectedUsers, setSelectedUsers] = useState<UserOption[] | null>(null);
   const [isMulti, setIsMulti] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const handleChange = (
     newValue: SingleValue<UserOption> | MultiValue<UserOption> | null
@@ -107,11 +108,37 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
     }
 
     if (!isMulti) {
-      await createSingleChat(selectedUsers);
+      setIsLoading(true);
+      const response = await createSingleChat(selectedUsers);
+
+      const chats = LocalStorage.get("chats");
+      if (!chats) {
+        LocalStorage.set("chats", [response]);
+      } else {
+        chats.unshift(response);
+        LocalStorage.set("chats", chats);
+      }
+
+      setSelectedUsers(null);
+      setShow(false);
+      setIsLoading(false);
+
       return;
     }
-    await createGroupChat(selectedUsers);
 
+    setIsLoading(true);
+    const response = await createGroupChat(selectedUsers);
+
+    const chats = LocalStorage.get("chats");
+    if (!chats) {
+      LocalStorage.set("chats", [response]);
+    } else {
+      chats.unshift(response);
+      LocalStorage.set("chats", chats);
+    }
+
+    setSelectedUsers(null);
+    setIsLoading(false);
     setShow(false);
   };
 
@@ -146,7 +173,13 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
             Close
           </Button>
           <Button variant="primary" onClick={handleSubmit}>
-            {isMulti ? "Create Group chat" : "Create Chat"}
+            {isLoading ? (
+              <Spinner size="sm" animation="border" role="status"></Spinner>
+            ) : isMulti ? (
+              "Create Group chat"
+            ) : (
+              "Create Chat"
+            )}
           </Button>
         </Stack>
       </Modal.Body>
