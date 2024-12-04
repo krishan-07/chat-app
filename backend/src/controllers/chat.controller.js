@@ -137,7 +137,8 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
   }
 
   const newChatInstance = await Chat.create({
-    name: new mongoose.Types.ObjectId(receiverId),
+    name: user.fullname,
+    icon: user.avatar,
     participants: [req.user?._id, new mongoose.Types.ObjectId(receiverId)],
     admin: req.user?._id,
     isGroupChat: false,
@@ -146,29 +147,13 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
   const createdChat = await Chat.aggregate([
     {
       $match: {
-        _id: newChatInstance._id,
+        _id: new mongoose.Types.ObjectId(newChatInstance._id),
       },
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "name",
-        foreignField: "_id",
-        as: "name",
-        pipeline: [
-          {
-            $project: {
-              fullName: 1,
-            },
-          },
-        ],
-      },
-    },
-    {
-      $unwind: "$name",
     },
     ...commonAggregationPipeline(),
   ]);
+
+  console.log(createdChat);
 
   const payload = createdChat[0];
   if (!payload) throw new ApiError(500, "Internal server error");
@@ -534,7 +519,7 @@ const getAllChats = asyncHandler(async (req, res) => {
   const chats = await Chat.aggregate([
     {
       $match: {
-        participants: { $eleMatch: { $eq: req.user?._id } },
+        participants: { $elemMatch: { $eq: req.user?._id } },
       },
     },
     {

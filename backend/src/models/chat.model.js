@@ -1,10 +1,15 @@
 import mongoose, { Schema } from "mongoose";
+import { DefaultProfileUrl } from "../constants.js";
 
 const chatSchema = new Schema(
   {
     name: {
       type: String,
       required: true,
+    },
+    icon: {
+      type: String,
+      default: DefaultProfileUrl,
     },
     isGroupChat: {
       type: Boolean,
