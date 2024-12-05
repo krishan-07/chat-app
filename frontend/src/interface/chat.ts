@@ -1,4 +1,4 @@
-interface ChatInterface {
+export interface ChatInterface {
   _id: string;
   name: string;
   icon: string;

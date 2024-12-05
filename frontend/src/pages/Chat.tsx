@@ -1,6 +1,6 @@
 import { Button, Offcanvas, Stack } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { BsChatText } from "react-icons/bs";
@@ -9,30 +9,20 @@ import CreateChatModal from "../components/CreateChatModal";
 import { LocalStorage, requestHandler } from "../utils";
 import { getAllChats } from "../api";
 import ChatName from "../components/ChatName";
+import ChatArea from "../components/ChatArea";
+import { ChatInterface } from "../interface/chat";
+import useBreakpoint from "../hooks/useBreakpoint";
 
 type MenuSideBarProps = {
   show: boolean;
   setShow: React.Dispatch<React.SetStateAction<boolean>>;
 };
+
 type ChatSideBarProps = MenuSideBarProps & {
   showMenu: React.Dispatch<React.SetStateAction<boolean>>;
   showCreateChat: React.Dispatch<React.SetStateAction<boolean>>;
   chats: ChatInterface[];
-};
-
-const getChats = async () => {
-  let response: ChatInterface[] = [];
-
-  await requestHandler(
-    async () => await getAllChats(),
-    undefined,
-    (res) => {
-      response = res.data;
-    },
-    alert
-  );
-
-  return response;
+  setCurrentChatRef: React.Dispatch<React.SetStateAction<ChatInterface | null>>;
 };
 
 const ChatSideBar: React.FC<ChatSideBarProps> = ({
@@ -41,7 +31,14 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
   showMenu,
   showCreateChat,
   chats,
+  setCurrentChatRef,
 }) => {
+  const currentChat = useRef<ChatInterface | null>(null);
+  const breakPoint = useBreakpoint();
+
+  const handleClose = () => {
+    if (breakPoint === "mobile") setShow(false);
+  };
   return (
     <>
       <Offcanvas
@@ -79,14 +76,19 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
         <hr className="mt-0" />
         <Offcanvas.Body className="p-0">
           {chats.map((chat) => (
-            <ChatName
-              src={chat.icon}
-              name={chat.name}
-              chatId={chat._id}
-              lastUpdated={chat.updatedAt}
-              lastMessage={chat.lastMessage}
+            <div
               key={chat._id}
-            />
+              onClick={() => {
+                setCurrentChatRef(chat);
+                currentChat.current = chat;
+                handleClose();
+              }}
+            >
+              <ChatName
+                chat={chat}
+                isCurrentChat={currentChat.current?._id === chat._id}
+              />
+            </div>
           ))}
         </Offcanvas.Body>
       </Offcanvas>
@@ -124,19 +126,41 @@ const MenuSideBar: React.FC<MenuSideBarProps> = ({ show, setShow }) => {
 
 const ChatPage = () => {
   const { logout } = useAuth();
-  const [showChatSideBar, setShowChatSideBar] = useState(true);
-  const [showMenu, setShowMenu] = useState(false);
-  const [ShowCreateChat, setShowcreateChat] = useState(false);
+
+  const breakPoint = useBreakpoint();
+
+  const [currentChatRef, setCurrentChatRef] = useState<ChatInterface | null>(
+    null
+  ); //To hold the current chat reference
+  const [showChatSideBar, setShowChatSideBar] = useState(true); //To control the chat side bar
+  const [showMenu, setShowMenu] = useState(false); //To control the menu
+  const [ShowCreateChat, setShowcreateChat] = useState(false); //To control create chat modal
+
+  //To store chats, by default retrive it from Local storage
   const [chats, setChats] = useState<ChatInterface[]>(
     () => LocalStorage.get("chats") || []
   );
-
-  const handleClose = () => {};
 
   const handleLogout = async () => {
     await logout();
   };
 
+  const getChats = async () => {
+    let response: ChatInterface[] = [];
+
+    await requestHandler(
+      async () => await getAllChats(),
+      undefined,
+      (res) => {
+        response = res.data;
+      },
+      alert
+    );
+
+    return response;
+  };
+
+  //To fetch chats from LocalStorage or API(if localStorage is null) for each time create chat modal is opened
   useEffect(() => {
     const fetchChats = async () => {
       if (!LocalStorage.get("chats")) {
@@ -152,6 +176,13 @@ const ChatPage = () => {
 
     fetchChats();
   }, [ShowCreateChat]);
+
+  //To toggle chat side bar according to breakpoints
+  useEffect(() => {
+    if (breakPoint !== "mobile") setShowChatSideBar(true);
+    if (breakPoint === "mobile") setShowChatSideBar(false);
+  }, [breakPoint]);
+
   return (
     <>
       <ChatSideBar
@@ -160,16 +191,28 @@ const ChatPage = () => {
         showMenu={setShowMenu}
         showCreateChat={setShowcreateChat}
         chats={chats}
+        setCurrentChatRef={setCurrentChatRef}
       />
       <MenuSideBar show={showMenu} setShow={setShowMenu} />
       <CreateChatModal show={ShowCreateChat} setShow={setShowcreateChat} />
       <div className="d-flex">
-        <div className="holder"></div>
-        <div className="chat-holder flex-grow-1 px-sm-2">
-          <div className="center h2 mt-5" style={{ height: "80%" }}>
-            <div className="typewriter-text">Welcome to Chat App</div>
-          </div>
-          <Button onClick={handleLogout}>Logout </Button>
+        <div className="holder" />
+        <div className="chat-holder flex-grow-1">
+          {currentChatRef?._id ? (
+            <ChatArea
+              chat={currentChatRef}
+              setShowSideBar={setShowChatSideBar}
+            />
+          ) : (
+            <>
+              <div className="center h2 mt-5" style={{ height: "80%" }}>
+                <div className="typewriter-text">Welcome to Chat App</div>
+              </div>
+              <div className="center">
+                <Button onClick={handleLogout}>Logout </Button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </>

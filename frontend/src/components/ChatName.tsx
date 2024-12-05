@@ -1,69 +1,45 @@
 import { Container } from "react-bootstrap";
 import ProfileImage from "./ProfileImage";
-import { extractParamsfromSearchUrl, formatDate } from "../utils";
+import { formatDate } from "../utils";
+import { ChatInterface } from "../interface/chat";
 
 interface Props {
-  src: string;
-  name: string;
-  chatId: string;
-  lastUpdated: string;
-  lastMessage: string;
+  chat: ChatInterface;
+  isCurrentChat: boolean;
 }
 
-const ChatName: React.FC<Props> = ({
-  src,
-  name,
-  chatId,
-  lastUpdated,
-  lastMessage,
-}) => {
-  const currentChatId = extractParamsfromSearchUrl(
-    window.location.href,
-    "chatId"
-  );
-
+const ChatName: React.FC<Props> = ({ chat, isCurrentChat }) => {
   return (
     <>
       <Container
         fluid
-        className={`chat-name px-0 py-1 ${
-          currentChatId === chatId && "active"
-        }`}
+        className={`chat-name px-0 py-1 ${isCurrentChat && "active"}`}
       >
         <div className="d-flex align-items-center p-2 px-3">
-          <div className="ps-1">
-            <ProfileImage size="50px" src={src} alt={name} />
-          </div>
-          <div className="ps-2 flex-grow-1" style={{ fontWeight: "500" }}>
-            <div className="d-flex flex-column">
-              <div className="d-flex justify-content-between align-items-center">
-                <div
-                  style={{
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                    maxWidth: "70%",
-                    fontSize: "1.1rem",
-                  }}
-                >
-                  {name}
-                </div>
-                <div className="text-secondary" style={{ fontSize: ".8rem" }}>
-                  {formatDate(lastUpdated)}
-                </div>
-              </div>
+          <ProfileImage size="50px" src={chat.icon} alt={chat.name} />
+          <div
+            className="ps-2 flex-grow-1 d-flex flex-column"
+            style={{ fontWeight: "500" }}
+          >
+            <div className="d-flex justify-content-between align-items-center">
               <div
-                className="text-secondary"
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  maxWidth: "100%",
-                  fontSize: " .8rem",
-                }}
+                className={`${chat.isGroupChat && "text-truncate w-60"}`}
+                style={{ fontSize: "1.1rem" }}
               >
-                {lastMessage || <>&nbsp;</>}
+                {chat.name}
               </div>
+              <div className="text-secondary" style={{ fontSize: ".8rem" }}>
+                {formatDate(chat.updatedAt)}
+              </div>
+            </div>
+            <div
+              className="text-secondary text-truncate"
+              style={{
+                maxWidth: "100%",
+                fontSize: " .8rem",
+              }}
+            >
+              {chat.lastMessage || <>&nbsp;</>}
             </div>
           </div>
         </div>

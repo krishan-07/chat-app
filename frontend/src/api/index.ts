@@ -79,6 +79,10 @@ const getAllChats = () => {
   return apiClient.get("/chats");
 };
 
+const getChatMessages = (chatId: string) => {
+  return apiClient.get(`/messages/${chatId}`);
+};
+
 export {
   loginUser,
   registerUser,
@@ -90,4 +94,5 @@ export {
   createSingleChat,
   createGroupChat,
   getAllChats,
+  getChatMessages,
 };
