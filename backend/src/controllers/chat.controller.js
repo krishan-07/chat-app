@@ -153,8 +153,6 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
     ...commonAggregationPipeline(),
   ]);
 
-  console.log(createdChat);
-
   const payload = createdChat[0];
   if (!payload) throw new ApiError(500, "Internal server error");
 

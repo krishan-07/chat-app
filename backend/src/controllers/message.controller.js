@@ -17,7 +17,7 @@ const commonAggregationPipeline = () => {
     {
       $lookup: {
         from: "users",
-        localFeild: "sender",
+        localField: "sender",
         foreignField: "id",
         as: "sender",
         pipeline: [
@@ -63,8 +63,6 @@ const getAllMessages = asyncHandler(async (req, res) => {
       },
     },
   ]);
-
-  if (!message.length) throw new ApiError(404, "No messages found");
 
   return res
     .status(200)
