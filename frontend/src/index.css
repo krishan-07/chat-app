@@ -140,6 +140,7 @@ img {
 }
 .chat-name:hover {
   background-color: #2e3031;
+  transform: scale(101%);
 }
 .chat-name:active {
   background-color: #424647;

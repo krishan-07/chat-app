@@ -30,7 +30,7 @@ const ChatName: React.FC<Props> = ({
           currentChatId === chatId && "active"
         }`}
       >
-        <div className="d-flex align-items-center p-2">
+        <div className="d-flex align-items-center p-2 px-3">
           <div className="ps-1">
             <ProfileImage size="50px" src={src} alt={name} />
           </div>
@@ -38,12 +38,12 @@ const ChatName: React.FC<Props> = ({
             <div className="d-flex flex-column">
               <div className="d-flex justify-content-between align-items-center">
                 <div
-                  className="fs-5"
                   style={{
                     overflow: "hidden",
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap",
                     maxWidth: "70%",
+                    fontSize: "1.1rem",
                   }}
                 >
                   {name}
@@ -68,7 +68,6 @@ const ChatName: React.FC<Props> = ({
           </div>
         </div>
       </Container>
-      <hr className="m-0" />
     </>
   );
 };
