@@ -65,4 +65,4 @@ app.use("/api/v1/chats", chatRouter);
 
 initializeSocketId(io);
 
-export { app };
+export { httpServer };

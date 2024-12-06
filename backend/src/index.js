@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import connectDB from "./db/index.js";
-import { app } from "./app.js";
+import { httpServer } from "./app.js";
 
 dotenv.config({
   path: "./.env",
@@ -8,9 +8,9 @@ dotenv.config({
 
 connectDB()
   .then(() => {
-    app.on("error", (err) => console.log("server connection failed"));
+    httpServer.on("error", (err) => console.log("server connection failed"));
 
-    app.listen(process.env.PORT || 8080, () => {
+    httpServer.listen(process.env.PORT || 8080, () => {
       console.log(`server is running at port : ${process.env.PORT}`);
     });
   })
