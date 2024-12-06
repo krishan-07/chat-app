@@ -17,22 +17,24 @@ const commonAggregationPipeline = () => {
     {
       $lookup: {
         from: "users",
+        foreignField: "_id",
         localField: "sender",
-        foreignField: "id",
         as: "sender",
         pipeline: [
           {
             $project: {
               username: 1,
-              fullname: 1,
               avatar: 1,
+              email: 1,
             },
           },
         ],
       },
     },
     {
-      $unwind: "$sender",
+      $addFields: {
+        sender: { $first: "$sender" },
+      },
     },
   ];
 };
@@ -78,7 +80,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   const chat = await Chat.findById(chatId);
   if (!chat) throw new ApiError(404, "Chat does not exists");
-  if (chat.participants.includes(req.user?._id))
+  if (!chat.participants.includes(req.user?._id))
     throw new ApiError(
       401,
       "cannot access the chat in which you didn't participated"
@@ -86,7 +88,7 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   const attachments = [];
 
-  if (req.files && req.files?.attachments.length > 0) {
+  if (req.files && req.files?.attachments?.length > 0) {
     req.files.attachments.map((attachment) => {
       const file = uploadOnCloudinary(attachment);
       if (!file.url)
@@ -109,7 +111,7 @@ const sendMessage = asyncHandler(async (req, res) => {
     chatId,
     {
       $set: {
-        lastMessage: message.content,
+        lastMessage: message._id,
       },
     },
     { new: true }
@@ -122,7 +124,7 @@ const sendMessage = asyncHandler(async (req, res) => {
         _id: new mongoose.Types.ObjectId(message._id),
       },
     },
-    ...commonAggregationPipeline,
+    ...commonAggregationPipeline(),
   ]);
 
   const recievedMessage = structuredMessage[0];
