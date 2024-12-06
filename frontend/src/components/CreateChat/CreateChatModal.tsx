@@ -1,16 +1,16 @@
 import React, { useState } from "react";
 import { Button, Form, Modal, Spinner, Stack } from "react-bootstrap";
 import { IoClose } from "react-icons/io5";
-import { getUserByQuery } from "../api";
-import { UserInterface } from "../interface/user";
+import { getUserByQuery } from "../../api";
+import { UserInterface } from "../../interface/user";
 import AsyncSelect from "react-select/async";
 import { CustomOption, customStyles } from "./CustomOption";
 import { MultiValue, SingleValue } from "react-select";
-import { LocalStorage, requestHandler } from "../utils";
+import { LocalStorage, requestHandler } from "../../utils";
 import {
   createSingleChat as singleChat,
   createGroupChat as groupChat,
-} from "../api";
+} from "../../api";
 
 interface Props {
   show: boolean;

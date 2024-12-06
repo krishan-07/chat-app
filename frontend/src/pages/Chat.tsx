@@ -5,7 +5,7 @@ import { FaRegEdit } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { BsChatText } from "react-icons/bs";
 import { IoClose, IoSettingsSharp } from "react-icons/io5";
-import CreateChatModal from "../components/CreateChatModal";
+import CreateChatModal from "../components/CreateChat/CreateChatModal";
 import { LocalStorage, requestHandler } from "../utils";
 import { getAllChats } from "../api";
 import ChatName from "../components/ChatName";

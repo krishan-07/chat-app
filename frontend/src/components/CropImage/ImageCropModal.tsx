@@ -1,11 +1,11 @@
 import "react-image-crop/dist/ReactCrop.css";
 import React, { useState, useRef, useEffect } from "react";
 import ReactCrop, { Crop, PixelCrop } from "react-image-crop";
-import { canvasPreview } from "./utlis/canvasPreview";
-import { useDebounceEffect } from "../hooks/useDebounceEffect";
+import { canvasPreview } from "./canvasPreview";
+import { useDebounceEffect } from "../../hooks/useDebounceEffect";
 import { Button, Modal } from "react-bootstrap";
-import { blobUrlToBlob } from "../utils";
-import centerAspectCrop from "./utlis/centerAspectCrop";
+import { blobUrlToBlob } from "../../utils";
+import centerAspectCrop from "./centerAspectCrop";
 
 type Props = {
   show: boolean;

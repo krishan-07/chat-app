@@ -1,6 +1,6 @@
 import React from "react";
 import { OptionProps, StylesConfig } from "react-select";
-import ProfileImage from "./ProfileImage";
+import ProfileImage from "../ProfileImage";
 
 interface UserOption {
   value: string; // Corresponds to `user._id`

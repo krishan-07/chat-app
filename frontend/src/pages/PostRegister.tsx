@@ -11,7 +11,7 @@ import {
   Row,
   Spinner,
 } from "react-bootstrap";
-import ImageCropModal from "../components/ImageCropModal";
+import ImageCropModal from "../components/CropImage/ImageCropModal";
 import { Crop } from "react-image-crop";
 import { getCurrentUser, updateAvatar, updateUserDetails } from "../api";
 import { blobUrlToFile, LocalStorage } from "../utils";
