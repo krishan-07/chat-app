@@ -164,7 +164,10 @@ const ChatPage = () => {
   //To toggle chat side bar according to breakpoints
   useEffect(() => {
     if (breakPoint !== "mobile") setShowChatSideBar(true);
-    if (breakPoint === "mobile") setShowChatSideBar(false);
+    if (breakPoint === "mobile" && currentChatRef?._id)
+      setShowChatSideBar(false);
+    if (breakPoint === "mobile" && !currentChatRef?._id)
+      setShowChatSideBar(true);
   }, [breakPoint]);
 
   return (
