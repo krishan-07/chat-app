@@ -7,6 +7,19 @@
   --accent-color: rgb(0, 48, 4);
 }
 
+:root {
+  --header-bg: #131416;
+  --body-bg: #212529;
+  --modal-bg: #212529;
+  --color-white: #ffffff;
+  --side-bar-bg: #1a1d20;
+  --border-bg: #80808040;
+  --active-chat-bg: #282d2e;
+  --active-chat-hover-bg: #303738;
+  --hover-bg: #202427;
+  --active-bg: #363e3f;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -44,7 +57,7 @@ img {
 }
 
 .modal-content {
-  background-color: #212529 !important;
+  background-color: var(--modal-bg) !important;
 }
 
 @media screen and (max-width: 600px) {
@@ -63,18 +76,38 @@ img {
     width: 295px !important;
   }
 }
+@media screen and (min-width: 912px) {
+  .chat-sidebar {
+    width: 450px !important;
+  }
+}
+
+.chat-sidebar {
+  background-color: var(--side-bar-bg) !important;
+  color: var(--color-white) !important;
+  z-index: 100 !important;
+  border-right: none !important;
+}
+.chat-sidebar-header {
+  background-color: var(--header-bg) !important;
+}
+.menu-sidebar {
+  background-color: var(--header-bg) !important;
+  color: var(--color-white) !important;
+  width: 65px !important;
+}
 
 .holder {
   width: 450px;
   max-width: 100%;
   height: 100vh;
-  background-color: white;
+  background-color: var(--body-bg);
 }
 
 .chat-holder {
   height: 100vh;
-  color: white;
-  border-left: 1px solid rgba(128, 128, 128, 0.25);
+  color: var(--color-white);
+  border-left: 1px solid var(--body-bg);
 }
 
 /* typewriting animation */
@@ -83,11 +116,10 @@ img {
   text-align: center;
   height: 2.5rem;
   transform: scale(1.5);
-  color: white;
+  color: var(--color-white);
   position: relative;
   width: max-content;
 }
-
 .typewriter-text::before,
 .typewriter-text::after {
   content: "";
@@ -97,19 +129,16 @@ img {
   bottom: 0;
   top: 0;
 }
-
 .typewriter-text::before {
   background-color: var(--typewriter-background);
   animation: typewriter var(--animation-time)
     steps(var(--typewriter-characters)) var(--animation-delay) forwards;
 }
-
 @keyframes typewriter {
   to {
     left: 100%;
   }
 }
-
 .typewriter-text::after {
   width: 0.12em;
   height: 2.5rem;
@@ -119,13 +148,11 @@ img {
     blinker 500ms infinite forwards;
   opacity: 1;
 }
-
 @keyframes blinker {
   to {
     opacity: 0;
   }
 }
-
 @keyframes fadein {
   to {
     opacity: 1;
@@ -137,25 +164,25 @@ img {
   box-sizing: border-box;
 }
 .chat-name.active {
-  background-color: #282d2e;
+  background-color: var(--active-chat-bg);
 }
 .chat-name.active:hover {
-  background-color: #303738;
+  background-color: var(--active-chat-hover-bg);
 }
 .chat-name:hover {
-  background-color: #202427;
+  background-color: var(--hover-bg);
 }
 .chat-name:active {
-  background-color: #363e3f;
+  background-color: var(--active-bg);
 }
 
 .custom-placeholder::placeholder {
-  color: white !important;
+  color: var(--color-white) !important;
   opacity: 0.7 !important;
 }
 .typing-input {
   background: #212529 !important;
-  color: white !important;
+  color: var(--color-white) !important;
   border: none !important;
   border-radius: 25px !important;
   outline: none !important;
@@ -166,7 +193,7 @@ img {
   opacity: 0.7;
 }
 .message-icons:hover {
-  background-color: #202427;
+  background-color: var(--hover-bg);
 }
 .w-60 {
   max-width: 60% !important;

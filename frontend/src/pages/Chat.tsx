@@ -44,21 +44,10 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
       <Offcanvas
         className="chat-sidebar"
         show={show}
-        style={{
-          backgroundColor: "rgb(26 29 32)",
-          transition: "none",
-          color: "white",
-          zIndex: "100",
-          borderRight: "none",
-          width: "450px",
-        }}
         backdrop={false}
         scroll={true}
       >
-        <Offcanvas.Header
-          className="justify-content-between"
-          style={{ backgroundColor: "rgb(15 16 18)" }}
-        >
+        <Offcanvas.Header className="justify-content-between chat-sidebar-header">
           <Offcanvas.Title>Chat App</Offcanvas.Title>
           <Stack gap={3} direction="horizontal">
             <GiHamburgerMenu
@@ -99,14 +88,9 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
 const MenuSideBar: React.FC<MenuSideBarProps> = ({ show, setShow }) => {
   return (
     <Offcanvas
-      className="menu-sideBar mx-0"
+      className="menu-sidebar mx-0"
       show={show}
       onHide={() => setShow(false)}
-      style={{
-        backgroundColor: "rgb(15 16 18)",
-        color: "white",
-        width: "65px",
-      }}
       scroll={false}
     >
       <Offcanvas.Header>
