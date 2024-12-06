@@ -43,13 +43,12 @@ export const customStyles: StylesConfig<UserOption, false> = {
   // Style for the control (input field)
   control: (base, state) => ({
     ...base,
-    borderRadius: "8px",
+    borderRadius: "10px",
     borderColor: state.isFocused ? "#0056b3" : "#ccc", // Border color
-    backgroundColor: "#383b3e", // Input field background color
+    backgroundColor: "#212529", // Input field background color
     color: "#ffffff", // Text color in the input field
-    "&:hover": {
-      borderColor: "#0056b3", // Border color on hover
-    },
+    fontWeight: 500,
+    fontSize: "1rem",
   }),
 
   // Style for the placeholder text

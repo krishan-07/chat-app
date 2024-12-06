@@ -6,15 +6,17 @@ import { UserInterface } from "../../interface/user";
 import AsyncSelect from "react-select/async";
 import { CustomOption, customStyles } from "./CustomOption";
 import { MultiValue, SingleValue } from "react-select";
-import { LocalStorage, requestHandler } from "../../utils";
+import { requestHandler } from "../../utils";
 import {
   createSingleChat as singleChat,
   createGroupChat as groupChat,
 } from "../../api";
+import { ChatInterface } from "../../interface/chat";
 
 interface Props {
   show: boolean;
   setShow: React.Dispatch<React.SetStateAction<boolean>>;
+  onSucess: (chat: ChatInterface) => void;
 }
 
 interface UserOption {
@@ -22,35 +24,6 @@ interface UserOption {
   label: string; // Corresponds to `user.username`
   avatar: string; // URL for the user's avatar
 }
-
-const createSingleChat = async (user: UserOption[]) => {
-  let response;
-
-  await requestHandler(
-    async () => await singleChat(user[0].value),
-    undefined,
-    (res) => (response = res.data),
-    alert
-  );
-
-  return response;
-};
-
-const createGroupChat = async (users: UserOption[]) => {
-  const groupName = users.reduce((acc, user) => acc + user.label + ", ", "");
-  const participants = users.map((user) => user.value);
-
-  let response;
-
-  await requestHandler(
-    async () => await groupChat(groupName.trim(), participants),
-    undefined,
-    (res) => (response = res.data),
-    alert
-  );
-
-  return response;
-};
 
 const fetchUsers = async (query: string): Promise<UserOption[]> => {
   if (!query) return [];
@@ -75,15 +48,16 @@ const fetchUsers = async (query: string): Promise<UserOption[]> => {
   return data;
 };
 
-const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
+const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
   const [selectedUsers, setSelectedUsers] = useState<UserOption[] | null>(null);
-  const [isMulti, setIsMulti] = useState<boolean>(false);
+  const [isGroupChat, setIsGroupChat] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [groupChatName, setGroupChatName] = useState("");
 
   const handleChange = (
     newValue: SingleValue<UserOption> | MultiValue<UserOption> | null
   ) => {
-    if (isMulti) {
+    if (isGroupChat) {
       // Multi-select: newValue is readonly UserOption[], convert to mutable array
       setSelectedUsers(Array.isArray(newValue) ? [...newValue] : []);
     } else {
@@ -93,53 +67,57 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
   };
 
   const handleToggleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setIsMulti(e.target.checked);
+    setIsGroupChat(e.target.checked);
   };
 
   const handleClose = () => {
+    setGroupChatName("");
+    setIsGroupChat(false);
     setSelectedUsers(null);
     setShow(false);
   };
 
-  const handleSubmit = async () => {
-    if (!selectedUsers || !selectedUsers.length) {
-      alert("Please select user to create a chat");
-      return;
-    }
+  const createSingleChat = async () => {
+    if (!selectedUsers) return alert("Please select a user");
 
-    if (!isMulti) {
-      setIsLoading(true);
-      const response = await createSingleChat(selectedUsers);
+    await requestHandler(
+      async () => await singleChat(selectedUsers[0].value || ""),
+      setIsLoading,
+      (res) => {
+        const { data } = res;
+        if (res.statusCode === 200) {
+          alert("Chat with selected user already exists");
+          return;
+        }
+        onSucess(data);
+        handleClose(); // Close the modal or popup
+      },
+      alert
+    );
+  };
 
-      const chats = LocalStorage.get("chats");
-      if (!chats) {
-        LocalStorage.set("chats", [response]);
-      } else {
-        chats.unshift(response);
-        LocalStorage.set("chats", chats);
-      }
+  const createGroupChat = async () => {
+    if (!selectedUsers) return alert("Please select a user");
+    if (!groupChatName.trim()) return alert("Please enter a group name");
+    if (groupChatName.length < 3)
+      return alert("Group name should have more than 3 characters");
 
-      setSelectedUsers(null);
-      setShow(false);
-      setIsLoading(false);
+    const participants = selectedUsers.map((user) => user.value);
+    if (participants.length <= 1)
+      return alert(
+        "Please select more than one participant to create groupChat"
+      );
 
-      return;
-    }
-
-    setIsLoading(true);
-    const response = await createGroupChat(selectedUsers);
-
-    const chats = LocalStorage.get("chats");
-    if (!chats) {
-      LocalStorage.set("chats", [response]);
-    } else {
-      chats.unshift(response);
-      LocalStorage.set("chats", chats);
-    }
-
-    setSelectedUsers(null);
-    setIsLoading(false);
-    setShow(false);
+    await requestHandler(
+      async () => await groupChat(groupChatName.trim(), participants),
+      setIsLoading,
+      (res) => {
+        const { data } = res;
+        onSucess(data);
+        handleClose();
+      },
+      alert
+    );
   };
 
   return (
@@ -154,9 +132,21 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
           type="switch"
           id="group-chat-switch"
           label="Is it a group chat?"
-          checked={isMulti}
+          checked={isGroupChat}
           onChange={handleToggleChange}
         ></Form.Check>
+
+        <Form.Control
+          type="text"
+          value={groupChatName}
+          onChange={(e) => setGroupChatName(e.target.value)}
+          placeholder="Enter a group name..."
+          className={`typing-input custom-placeholder fs-6 border-secondary border-radius-10 ${
+            !isGroupChat ? "hidden" : "visible"
+          }`}
+          style={{ border: "1px solid lightgray" }}
+        ></Form.Control>
+
         <div className="mb-5" style={{ height: "200px" }}>
           <AsyncSelect<UserOption, false | true>
             loadOptions={fetchUsers}
@@ -165,20 +155,23 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow }) => {
             placeholder="Search users..."
             components={{ Option: CustomOption }}
             styles={customStyles}
-            isMulti={isMulti}
+            isMulti={isGroupChat}
           />
         </div>
         <Stack direction="horizontal" gap={1}>
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleSubmit}>
+          <Button
+            variant="primary"
+            onClick={() => {
+              isGroupChat ? createGroupChat() : createSingleChat();
+            }}
+          >
             {isLoading ? (
               <Spinner size="sm" animation="border" role="status"></Spinner>
-            ) : isMulti ? (
-              "Create Group chat"
             ) : (
-              "Create Chat"
+              "create"
             )}
           </Button>
         </Stack>

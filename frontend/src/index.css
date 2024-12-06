@@ -181,13 +181,19 @@ img {
   opacity: 0.7 !important;
 }
 .typing-input {
-  background: #212529 !important;
+  background: var(--typewriter-background) !important;
   color: var(--color-white) !important;
-  border: none !important;
+  border: 1px solid rgba(255, 255, 255, 0) !important;
   border-radius: 25px !important;
   outline: none !important;
   box-shadow: none !important;
   font-size: 0.9rem !important;
+}
+.typing-input:focus {
+  border: 1px solid gray !important;
+}
+.typing-input:hover {
+  border: 1px solid gray !important;
 }
 .message-icons {
   opacity: 0.7;
@@ -202,4 +208,28 @@ img {
 .back-arrow:hover {
   transform: translateX(-10px);
   transition: transform 1s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.hidden {
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease, max-height 0.3s ease,
+    padding 0.3s ease, margin 0.3s ease !important;
+}
+
+.visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  max-height: 100px !important; /* Adjust to your div's natural height */
+  margin-bottom: 0.5rem;
+  padding: 0.3rem;
+  transition: opacity 0.3s ease, visibility 0.3s ease, max-height 0.3s ease,
+    padding 0.3s ease, margin 0.3s ease !important;
+}
+.border-radius-10 {
+  border-radius: 10px !important;
 }
