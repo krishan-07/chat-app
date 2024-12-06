@@ -362,9 +362,6 @@ const getUserByQuery = asyncHandler(async (req, res) => {
   const users = await User.aggregate([
     {
       $match: {
-        _id: {
-          $ne: req.user?._id,
-        },
         username: { $regex: `^${query}`, $options: "i" },
       },
     },
