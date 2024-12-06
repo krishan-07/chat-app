@@ -196,10 +196,10 @@ img {
   border: 1px solid gray !important;
 }
 .message-icons {
-  opacity: 0.7;
+  opacity: 0.7 !important;
 }
 .message-icons:hover {
-  background-color: var(--hover-bg);
+  background-color: var(--hover-bg) !important;
 }
 .w-60 {
   max-width: 60% !important;
@@ -232,4 +232,24 @@ img {
 }
 .border-radius-10 {
   border-radius: 10px !important;
+}
+
+/* custom scroll bar */
+::-webkit-scrollbar {
+  width: 15px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: gray;
+  border-radius: 20px;
+  border: 6px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: lightgray;
 }
