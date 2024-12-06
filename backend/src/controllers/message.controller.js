@@ -73,7 +73,7 @@ const sendMessage = asyncHandler(async (req, res) => {
   const { chatId } = req.params;
   const { content } = req.body;
 
-  if (!content || !req.files?.attachments?.length)
+  if (!content && !req.files?.attachments?.length)
     throw new ApiError(400, "Atleast content or a file is required");
 
   const chat = await Chat.findById(chatId);
