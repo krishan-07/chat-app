@@ -112,7 +112,10 @@ export const blobUrlToFile = async (
   return file;
 };
 
-export const formatDate = (dateString: string): string => {
+export const formatDate = (
+  dateString: string,
+  time: boolean = true
+): string => {
   const inputDate = new Date(dateString);
   const now = new Date();
 
@@ -146,7 +149,8 @@ export const formatDate = (dateString: string): string => {
   };
 
   if (isToday(inputDate)) {
-    return formatTime(inputDate); // Show time if it's today
+    if (time) return formatTime(inputDate); // Show time if it's today
+    else return "Today"; // show today is time is false
   } else if (isYesterday(inputDate)) {
     return "Yesterday"; // Show "Yesterday" if it's yesterday
   } else {
