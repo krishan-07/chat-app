@@ -64,6 +64,10 @@ const getUserByQuery = (query: string) => {
   });
 };
 
+const getAvailableUsers = () => {
+  return apiClient.get("/chats/search");
+};
+
 const createSingleChat = (userId: string) => {
   return apiClient.post(`/chats/c/${userId}`);
 };
@@ -83,6 +87,17 @@ const getChatMessages = (chatId: string) => {
   return apiClient.get(`/messages/${chatId}`);
 };
 
+const sendMessage = (chatId: string, content: string, attachments: File[]) => {
+  const formData = new FormData();
+  if (content) {
+    formData.append("content", content);
+  }
+  attachments?.map((file) => {
+    formData.append("attachments", file);
+  });
+  return apiClient.post(`/messages/${chatId}`, formData);
+};
+
 export {
   loginUser,
   registerUser,
@@ -91,8 +106,10 @@ export {
   updateAvatar,
   updateUserDetails,
   getUserByQuery,
+  getAvailableUsers,
   createSingleChat,
   createGroupChat,
   getAllChats,
   getChatMessages,
+  sendMessage,
 };

@@ -1,6 +1,6 @@
 import { Button, Offcanvas, Stack } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
 import { GiHamburgerMenu } from "react-icons/gi";
 import { BsChatText } from "react-icons/bs";
@@ -12,6 +12,8 @@ import ChatName from "../components/ChatName";
 import ChatArea from "../components/ChatArea";
 import { ChatInterface } from "../interface/chat";
 import useBreakpoint from "../hooks/useBreakpoint";
+import { useSocket } from "../context/SocketContext";
+import { ChatEventEnum } from "../utils/constants";
 
 type MenuSideBarProps = {
   show: boolean;
@@ -23,6 +25,7 @@ type ChatSideBarProps = MenuSideBarProps & {
   showCreateChat: React.Dispatch<React.SetStateAction<boolean>>;
   chats: ChatInterface[];
   setCurrentChatRef: React.Dispatch<React.SetStateAction<ChatInterface | null>>;
+  currentChatRef: ChatInterface | null;
 };
 
 const ChatSideBar: React.FC<ChatSideBarProps> = ({
@@ -32,8 +35,8 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
   showCreateChat,
   chats,
   setCurrentChatRef,
+  currentChatRef,
 }) => {
-  const currentChat = useRef<ChatInterface | null>(null);
   const breakPoint = useBreakpoint();
 
   const handleClose = () => {
@@ -69,13 +72,13 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
               key={chat._id}
               onClick={() => {
                 setCurrentChatRef(chat);
-                currentChat.current = chat;
+                LocalStorage.set("current-chat", chat);
                 handleClose();
               }}
             >
               <ChatName
                 chat={chat}
-                isCurrentChat={currentChat.current?._id === chat._id}
+                isCurrentChat={currentChatRef?._id === chat._id}
               />
             </div>
           ))}
@@ -110,6 +113,7 @@ const MenuSideBar: React.FC<MenuSideBarProps> = ({ show, setShow }) => {
 
 const ChatPage = () => {
   const { logout } = useAuth();
+  const { socket } = useSocket();
 
   const breakPoint = useBreakpoint();
 
@@ -136,7 +140,8 @@ const ChatPage = () => {
       async () => await getAllChats(),
       undefined,
       (res) => {
-        response = res.data;
+        const { data } = res;
+        setChats(data || []);
       },
       alert
     );
@@ -144,22 +149,21 @@ const ChatPage = () => {
     return response;
   };
 
-  //To fetch chats from LocalStorage or API(if localStorage is null) for each time create chat modal is opened
   useEffect(() => {
-    const fetchChats = async () => {
-      if (!LocalStorage.get("chats")) {
-        const fetchedChats = await getChats();
-        LocalStorage.set("chats", fetchedChats);
-        setChats(fetchedChats);
-      } else {
-        const chat = LocalStorage.get("chats");
-        LocalStorage.set("chats", chat);
-        setChats(chat);
-      }
-    };
+    // Fetch the chat list from the server.
+    getChats();
 
-    fetchChats();
-  }, [ShowCreateChat]);
+    // Retrieve the current chat details from local storage.
+    const _currentChat = LocalStorage.get("current-chat");
+
+    // If there's a current chat saved in local storage:
+    if (_currentChat) {
+      // Set the current chat reference to the one from local storage.
+      setCurrentChatRef(_currentChat);
+      // If the socket connection exists, emit an event to join the specific chat using its ID.
+      socket?.emit(ChatEventEnum.JOIN_CHAT_EVENT, _currentChat._id);
+    }
+  }, []);
 
   //To toggle chat side bar according to breakpoints
   useEffect(() => {
@@ -179,9 +183,16 @@ const ChatPage = () => {
         showCreateChat={setShowcreateChat}
         chats={chats}
         setCurrentChatRef={setCurrentChatRef}
+        currentChatRef={currentChatRef}
       />
       <MenuSideBar show={showMenu} setShow={setShowMenu} />
-      <CreateChatModal show={ShowCreateChat} setShow={setShowcreateChat} />
+      <CreateChatModal
+        show={ShowCreateChat}
+        setShow={setShowcreateChat}
+        onSucess={(chat) => {
+          setChats([chat, ...chats]);
+        }}
+      />
       <div className="d-flex">
         <div className="holder" />
         <div className="chat-holder flex-grow-1">

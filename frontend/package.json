@@ -19,6 +19,7 @@
     "react-image-crop": "^11.0.7",
     "react-router-dom": "^6.28.0",
     "react-select": "^5.8.3",
+    "react-textarea-autosize": "^8.5.5",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {
