@@ -1,38 +1,68 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { LocalStorage } from "../utils";
-import socketio from "socket.io-client";
+import { io, Socket } from "socket.io-client";
+import { ChatEventEnum } from "../utils/constants";
 
-//Function to establish a socket connection with authorization token
-const getSocket = () => {
+// Define types for events
+interface ServerToClientEvents {}
+
+interface ClientToServerEvents {
+  [ChatEventEnum.JOIN_CHAT_EVENT]: (chatId: string) => void;
+  [ChatEventEnum.STOP_TYPING_EVENT]: (chatId: string) => void;
+}
+
+// Create a context to hold the socket instance
+interface SocketContextType {
+  socket: Socket<ServerToClientEvents, ClientToServerEvents> | null;
+}
+const SocketContext = createContext<SocketContextType | undefined>(undefined);
+
+// Custom hook to use the socket context
+const useSocket = () => {
+  const context = useContext(SocketContext);
+  if (!context) {
+    throw new Error("useSocket must be used within a SocketProvider");
+  }
+  return context;
+};
+
+// Function to establish a socket connection with an authorization token
+const getSocket = (): Socket<
+  ServerToClientEvents,
+  ClientToServerEvents
+> | null => {
   const token = LocalStorage.get("token");
+  if (!token) {
+    console.warn("No token found for socket connection.");
+    return null;
+  }
 
-  //create socket connection with provided URi and authorization
-  return socketio(import.meta.env.VITE_SOCKET_URI, {
+  return io(import.meta.env.VITE_SOCKET_URI, {
     withCredentials: true,
     auth: { token },
   });
 };
 
-//create a context to hold socket instance
-const SocketContext = createContext<{
-  socket: ReturnType<typeof socketio> | null;
-}>({ socket: null });
-
-//hook to use socket context
-const useSocket = () => useContext(SocketContext);
-
 // SocketProvider component to manage the socket instance and provide it through context
 const SocketProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  // State to store the socket instance
-  const [socket, setSocket] = useState<ReturnType<typeof socketio> | null>(
-    null
-  );
+  const [socket, setSocket] = useState<Socket<
+    ServerToClientEvents,
+    ClientToServerEvents
+  > | null>(null);
 
   // Set up the socket connection when the component mounts
   useEffect(() => {
-    setSocket(getSocket());
+    const newSocket = getSocket();
+    if (newSocket) {
+      setSocket(newSocket);
+
+      // Cleanup on unmount
+      return () => {
+        newSocket.disconnect();
+      };
+    }
   }, []);
 
   return (
