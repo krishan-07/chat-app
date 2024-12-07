@@ -25,6 +25,21 @@ export const customStyles: StylesConfig<UserOption, false> = {
     overflowY: "auto", // Allow scrolling if there are many options
   }),
 
+  // Style for individual option items
+  option: (base, state) => ({
+    ...base,
+    backgroundColor: state.isFocused
+      ? "#505355" // Background color on hover
+      : state.isSelected
+      ? "#383b3e" // Background color when selected
+      : "#55595c", // Default background color
+    color: "#ffffff", // White text color
+    padding: 10, // Padding for options
+    display: "flex", // Flex layout
+    alignItems: "center", // Center align text
+    cursor: "pointer", // Pointer cursor for hover
+  }),
+
   // Style for the control (input field)
   control: (base, state) => ({
     ...base,
@@ -84,18 +99,14 @@ export const customStyles: StylesConfig<UserOption, false> = {
 };
 
 const CustomOption: React.FC<OptionProps<UserOption, boolean>> = (props) => {
-  const { data, innerRef, innerProps, isSelected, isFocused } = props;
+  const { data, innerRef, innerProps, isSelected } = props;
 
   return (
     <div
       ref={innerRef}
       {...innerProps}
       style={{
-        backgroundColor: isFocused
-          ? "#363e3f"
-          : isSelected
-          ? "#202427"
-          : "transparent",
+        backgroundColor: isSelected ? "#3b8c9f" : "transparent",
         display: "flex",
         alignItems: "center",
         color: "white",

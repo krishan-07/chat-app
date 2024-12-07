@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Button, Form, Modal, Spinner, Stack } from "react-bootstrap";
 import { IoClose } from "react-icons/io5";
-import { getAvailableUsers } from "../../api";
+import { getUserByQuery } from "../../api";
 import { UserInterface } from "../../interface/user";
-import Select from "react-select";
+import AsyncSelect from "react-select/async";
 import { CustomOption, customStyles } from "./CustomOption";
 import { MultiValue, SingleValue } from "react-select";
 import { requestHandler } from "../../utils";
@@ -25,12 +25,34 @@ interface UserOption {
   avatar: string; // URL for the user's avatar
 }
 
+const fetchUsers = async (query: string): Promise<UserOption[]> => {
+  if (!query) return [];
+
+  let data: UserOption[] | [] = [];
+
+  await requestHandler(
+    async () => await getUserByQuery(query),
+    undefined,
+    (res) => {
+      if (res.data.length) {
+        data = res.data.map((user: UserInterface) => ({
+          value: user._id,
+          label: user.username,
+          avatar: user.avatar,
+        }));
+      }
+    },
+    alert
+  );
+
+  return data;
+};
+
 const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
   const [selectedUsers, setSelectedUsers] = useState<UserOption[] | null>(null);
   const [isGroupChat, setIsGroupChat] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [groupChatName, setGroupChatName] = useState("");
-  const [options, setOptions] = useState<UserOption[]>([]);
 
   const handleChange = (
     newValue: SingleValue<UserOption> | MultiValue<UserOption> | null
@@ -73,30 +95,6 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
       alert
     );
   };
-
-  const fetchUsers = async () => {
-    await requestHandler(
-      async () => await getAvailableUsers(),
-      undefined,
-      (res) => {
-        if (res.data.length) {
-          const data: UserOption[] = res.data.map((user: UserInterface) => ({
-            value: user._id,
-            label: user.username,
-            avatar: user.avatar,
-          }));
-          setOptions(data);
-        }
-      },
-      alert
-    );
-  };
-
-  useEffect(() => {
-    if (!show) return;
-
-    fetchUsers();
-  }, [open]);
 
   const createGroupChat = async () => {
     if (!selectedUsers) return alert("Please select a user");
@@ -150,15 +148,14 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
         ></Form.Control>
 
         <div className="mb-5" style={{ height: "200px" }}>
-          <Select<UserOption, false | true>
-            options={options}
+          <AsyncSelect<UserOption, false | true>
+            loadOptions={fetchUsers}
             value={selectedUsers}
             onChange={handleChange}
             placeholder="Search users..."
             components={{ Option: CustomOption }}
             styles={customStyles}
             isMulti={isGroupChat}
-            isSearchable={true}
           />
         </div>
         <Stack direction="horizontal" gap={1}>
@@ -167,7 +164,6 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
           </Button>
           <Button
             variant="primary"
-            disabled={isLoading}
             onClick={() => {
               isGroupChat ? createGroupChat() : createSingleChat();
             }}
