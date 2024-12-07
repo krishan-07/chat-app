@@ -85,6 +85,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
             label: user.username,
             avatar: user.avatar,
           }));
+          console.log(data);
           setOptions(data);
         }
       },
@@ -96,7 +97,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
     if (!show) return;
 
     fetchUsers();
-  }, [open]);
+  }, [show]);
 
   const createGroupChat = async () => {
     if (!selectedUsers) return alert("Please select a user");
