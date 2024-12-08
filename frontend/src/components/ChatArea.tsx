@@ -1,7 +1,7 @@
 import { Button, Card, Col, Container, Row, Spinner } from "react-bootstrap";
 import { ChatInterface } from "../interface/chat";
 import ProfileImage from "./ProfileImage";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { IoSendOutline } from "react-icons/io5";
 import { MdOutlineEmojiEmotions } from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
@@ -71,6 +71,8 @@ const ChatArea: React.FC<Props> = ({
   const [messages, setMessages] = useState<MessageInterface[]>([]); //To store the message
   const [loadingMessages, setLoadingMessages] = useState(false); //To indicate loading of messages
   const [sending, setSending] = useState(false);
+
+  const bottomRef = useRef<HTMLDivElement | null>(null); //To handle auto scroll
 
   //To handle function while in mobile
   const breakPoint = useBreakpoint();
@@ -145,6 +147,11 @@ const ChatArea: React.FC<Props> = ({
   useEffect(() => {
     getMessages();
   }, [chat._id]);
+
+  useEffect(() => {
+    // Scroll to the bottom when the component mounts or new message is sent ot received
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   return (
     <div className="d-flex flex-column" style={{ height: "100%" }}>
@@ -241,6 +248,7 @@ const ChatArea: React.FC<Props> = ({
             })}
           </Container>
         )}
+        <div ref={bottomRef} />
       </div>
 
       {/* Typing section */}
