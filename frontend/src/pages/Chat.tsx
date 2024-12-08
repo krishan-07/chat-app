@@ -14,6 +14,7 @@ import { ChatInterface } from "../interface/chat";
 import useBreakpoint from "../hooks/useBreakpoint";
 import { useSocket } from "../context/SocketContext";
 import { ChatEventEnum } from "../utils/constants";
+import { MessageInterface } from "../interface/message";
 
 type MenuSideBarProps = {
   show: boolean;
@@ -123,6 +124,9 @@ const ChatPage = () => {
   const [showChatSideBar, setShowChatSideBar] = useState(true); //To control the chat side bar
   const [showMenu, setShowMenu] = useState(false); //To control the menu
   const [ShowCreateChat, setShowcreateChat] = useState(false); //To control create chat modal
+  const [unreadMessages, setUnreadMessages] = useState<MessageInterface[]>([]); // To track unread messages
+
+  const [isConnected, setIsConnected] = useState(false); // For tracking socket connection
 
   //To store chats, by default retrive it from Local storage
   const [chats, setChats] = useState<ChatInterface[]>(
@@ -147,6 +151,30 @@ const ChatPage = () => {
     );
 
     return response;
+  };
+
+  const updateChatLastMessage = (chatId: string, message: MessageInterface) => {
+    //search for chat from which the message is belonged
+    const chatToUpdate = chats.find((chat) => chat._id === chatId);
+
+    if (chatToUpdate) {
+      chatToUpdate.lastMessage = message.content; //update chat last message
+      chatToUpdate.updatedAt = message.updatedAt; //update chat updated at field
+
+      setChats([chatToUpdate, ...chats.filter((chat) => chat._id !== chatId)]);
+    }
+  };
+
+  const onConnect = () => {
+    setIsConnected(true);
+  };
+
+  const OnDisconnect = () => {
+    setIsConnected(false);
+  };
+
+  const onNewChat = (chat: ChatInterface) => {
+    setChats((prev) => [chat, ...prev]);
   };
 
   useEffect(() => {
@@ -174,6 +202,19 @@ const ChatPage = () => {
       setShowChatSideBar(true);
   }, [breakPoint]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on(ChatEventEnum.CONNECTED_EVENT, onConnect);
+    socket.on(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
+    socket.on(ChatEventEnum.NEW_CHAT_EVENT, onNewChat);
+
+    return () => {
+      socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
+      socket.off(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
+      socket.off(ChatEventEnum.NEW_CHAT_EVENT, onNewChat);
+    };
+  }, [chats, socket]);
   return (
     <>
       <ChatSideBar
@@ -200,6 +241,14 @@ const ChatPage = () => {
             <ChatArea
               chat={currentChatRef}
               setShowSideBar={setShowChatSideBar}
+              setChats={setChats}
+              setUnreadMessages={setUnreadMessages}
+              updateChatLastMessage={(
+                chatId: string,
+                message: MessageInterface
+              ) => {
+                updateChatLastMessage(chatId, message);
+              }}
             />
           ) : (
             <>

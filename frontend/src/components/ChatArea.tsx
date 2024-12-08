@@ -18,6 +18,9 @@ import TextareaAutosize from "react-textarea-autosize";
 interface Props {
   chat: ChatInterface;
   setShowSideBar: React.Dispatch<React.SetStateAction<boolean>>;
+  setChats: React.Dispatch<React.SetStateAction<ChatInterface[]>>;
+  setUnreadMessages: React.Dispatch<React.SetStateAction<MessageInterface[]>>;
+  updateChatLastMessage: (chatId: string, message: MessageInterface) => void;
 }
 
 //function ensures the object is of type MessageInterface by checking for the _id property.
@@ -48,7 +51,12 @@ const refactorMessages = (messages: MessageInterface[]) => {
   }, [] as Array<{ timeStamp?: string } | MessageInterface>);
 };
 
-const ChatArea: React.FC<Props> = ({ chat, setShowSideBar }) => {
+const ChatArea: React.FC<Props> = ({
+  chat,
+  setShowSideBar,
+  setUnreadMessages,
+  updateChatLastMessage,
+}) => {
   //import socket hook
   const { socket } = useSocket();
   const { user } = useAuth();
@@ -108,6 +116,26 @@ const ChatArea: React.FC<Props> = ({ chat, setShowSideBar }) => {
       alert
     );
   };
+
+  const onMessageReceived = (message: MessageInterface) => {
+    //check if the message received belongs to current chat_id
+    // If it belongs to the current chat, update the messages list for the active chat
+    if (message.chat === chat._id) setMessages((prev) => [message, ...prev]);
+    // If it belongs to the current chat, update the messages list for the active chat
+    else setUnreadMessages((prev) => [message, ...prev]);
+
+    updateChatLastMessage(message.chat || "", message);
+  };
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
+
+    return () => {
+      socket.off(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    };
+  }, [socket, chat._id]);
 
   useEffect(() => {
     getMessages();

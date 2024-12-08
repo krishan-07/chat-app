@@ -2,9 +2,16 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { LocalStorage } from "../utils";
 import { io, Socket } from "socket.io-client";
 import { ChatEventEnum } from "../utils/constants";
+import { ChatInterface } from "../interface/chat";
+import { MessageInterface } from "../interface/message";
 
 // Define types for events
-interface ServerToClientEvents {}
+interface ServerToClientEvents {
+  [ChatEventEnum.CONNECTED_EVENT]: () => void;
+  [ChatEventEnum.DISCONNECT_EVENT]: () => void;
+  [ChatEventEnum.NEW_CHAT_EVENT]: (chat: ChatInterface) => void;
+  [ChatEventEnum.MESSAGE_RECEIVED_EVENT]: (message: MessageInterface) => void;
+}
 
 interface ClientToServerEvents {
   [ChatEventEnum.JOIN_CHAT_EVENT]: (chatId: string) => void;
