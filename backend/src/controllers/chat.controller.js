@@ -137,8 +137,7 @@ const createOrGetSingleChat = asyncHandler(async (req, res) => {
   }
 
   const newChatInstance = await Chat.create({
-    name: user.fullname,
-    icon: user.avatar,
+    name: "One on one chat",
     participants: [req.user?._id, new mongoose.Types.ObjectId(receiverId)],
     admin: req.user?._id,
     isGroupChat: false,

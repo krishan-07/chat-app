@@ -61,6 +61,10 @@ const ChatArea: React.FC<Props> = ({
   const { socket } = useSocket();
   const { user } = useAuth();
 
+  const profileUser = chat.participants.find(
+    (participant) => participant._id !== user?._id
+  ); //get receiver chat user profile info
+
   const [message, setMessage] = useState(""); //To store the currently typed message
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]); // To store files attached to messages
 
@@ -157,10 +161,14 @@ const ChatArea: React.FC<Props> = ({
               <IoIosArrowBack size={30} />
             </div>
           )}
-          <ProfileImage src={chat.icon} alt={chat.name} size="45px" />
+          <ProfileImage
+            src={chat.isGroupChat ? chat.icon : profileUser?.avatar}
+            alt={chat.isGroupChat ? chat.name : profileUser?.fullname || ""}
+            size="45px"
+          />
           <div className="ps-2">
             <div style={{ fontWeight: "500", lineHeight: "1.1" }}>
-              {chat.name}
+              {chat.isGroupChat ? chat.name : profileUser?.fullname}
             </div>
             <div className="text-secondary" style={{ fontSize: ".8rem" }}>
               select for contact info

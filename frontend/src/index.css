@@ -19,7 +19,8 @@
   --hover-bg: #202427;
   --active-bg: #363e3f;
   --text-secondary: #d6d6d6;
-  --bg-primary: #071c3d;
+  --message-bg-right: #071c3d;
+  --message-bg-left: #353535;
 }
 
 * {
@@ -314,13 +315,13 @@ img {
   line-height: 1;
 }
 .sender-bubble {
-  background-color: var(--bg-primary) !important;
+  background-color: var(--message-bg-right) !important;
   color: var(--text-secondary) !important;
   border-radius: 7px 0 7px 7px !important;
 }
 .receiver-bubble {
-  background-color: gray;
-  color: #000000;
+  background-color: var(--message-bg-left) !important;
+  color: var(--text-secondary) !important;
   border-radius: 0 7px 7px 7px !important;
 }
 .sender-bubble::after {
@@ -329,11 +330,11 @@ img {
   width: 0;
   height: 0;
   left: auto;
-  right: -10px;
-  top: 0px;
+  right: -11px;
+  top: -1px;
   bottom: auto;
   border: 10px solid;
-  border-color: var(--bg-primary) transparent transparent transparent;
+  border-color: var(--message-bg-right) transparent transparent transparent;
 }
 .receiver-bubble::before {
   content: " ";
@@ -341,9 +342,9 @@ img {
   width: 0;
   height: 0;
   right: auto;
-  left: -10px;
-  top: 0px;
+  left: -11px;
+  top: -1px;
   bottom: auto;
   border: 10px solid;
-  border-color: var(--bg-primary) transparent transparent transparent;
+  border-color: var(--message-bg-left) transparent transparent transparent;
 }
