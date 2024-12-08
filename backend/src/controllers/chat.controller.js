@@ -34,7 +34,7 @@ const commonAggregationPipeline = () => {
     {
       // lookup for the group chats
       $lookup: {
-        from: "chatmessages",
+        from: "messages",
         foreignField: "_id",
         localField: "lastMessage",
         as: "lastMessage",
@@ -526,6 +526,7 @@ const getAllChats = asyncHandler(async (req, res) => {
     },
     ...commonAggregationPipeline(),
   ]);
+  console.log(chats);
 
   return res
     .status(200)
