@@ -116,6 +116,7 @@ const ChatArea: React.FC<Props> = ({
         setMessage(""); // Clear the message input
         setAttachedFiles([]); // Clear the list of attached files
         setMessages((prev) => [res.data, ...prev]); // Update messages in the UI
+        updateChatLastMessage(chat._id || "", res.data);
       },
       alert
     );
@@ -210,7 +211,7 @@ const ChatArea: React.FC<Props> = ({
                       user?._id === message.sender._id ? "sender" : "receiver"
                     }`}
                   >
-                    <div
+                    <Col
                       className={
                         user?._id === message.sender._id
                           ? "d-flex justify-content-end"
@@ -231,7 +232,7 @@ const ChatArea: React.FC<Props> = ({
                           </div>
                         </Card.Body>
                       </Card>
-                    </div>
+                    </Col>
                   </Row>
                 );
               }

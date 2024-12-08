@@ -27,6 +27,8 @@ type ChatSideBarProps = MenuSideBarProps & {
   chats: ChatInterface[];
   setCurrentChatRef: React.Dispatch<React.SetStateAction<ChatInterface | null>>;
   currentChatRef: ChatInterface | null;
+  unreadMessages: MessageInterface[];
+  setUnreadMessages: React.Dispatch<React.SetStateAction<MessageInterface[]>>;
 };
 
 const ChatSideBar: React.FC<ChatSideBarProps> = ({
@@ -37,6 +39,8 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
   chats,
   setCurrentChatRef,
   currentChatRef,
+  unreadMessages,
+  setUnreadMessages,
 }) => {
   const breakPoint = useBreakpoint();
 
@@ -75,11 +79,19 @@ const ChatSideBar: React.FC<ChatSideBarProps> = ({
                 setCurrentChatRef(chat);
                 LocalStorage.set("current-chat", chat);
                 handleClose();
+                setUnreadMessages([
+                  ...unreadMessages.filter(
+                    (m) => m.chat === currentChatRef?._id
+                  ),
+                ]);
               }}
             >
               <ChatName
                 chat={chat}
-                isCurrentChat={currentChatRef?._id === chat._id}
+                isActive={currentChatRef?._id === chat._id}
+                unreadMessages={
+                  unreadMessages.filter((m) => m.chat === chat._id).length
+                }
               />
             </div>
           ))}
@@ -158,7 +170,7 @@ const ChatPage = () => {
     const chatToUpdate = chats.find((chat) => chat._id === chatId);
 
     if (chatToUpdate) {
-      chatToUpdate.lastMessage = message.content; //update chat last message
+      chatToUpdate.lastMessage = message; //update chat last message
       chatToUpdate.updatedAt = message.updatedAt; //update chat updated at field
 
       setChats([chatToUpdate, ...chats.filter((chat) => chat._id !== chatId)]);
@@ -225,6 +237,8 @@ const ChatPage = () => {
         chats={chats}
         setCurrentChatRef={setCurrentChatRef}
         currentChatRef={currentChatRef}
+        unreadMessages={unreadMessages}
+        setUnreadMessages={setUnreadMessages}
       />
       <MenuSideBar show={showMenu} setShow={setShowMenu} />
       <CreateChatModal

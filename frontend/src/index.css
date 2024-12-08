@@ -282,10 +282,6 @@ img {
   width: max-content;
   font-size: 0.65rem;
 }
-.w-70 {
-  max-width: 70% !important;
-  width: 70% !important;
-}
 .message-container.sender {
   justify-content: flex-end !important;
 }
@@ -296,7 +292,7 @@ img {
 
 .message-bubble {
   position: relative !important;
-  max-width: 70% !important;
+  max-width: 80% !important;
   word-wrap: break-word !important;
   min-width: 60px !important;
   min-height: 2rem !important;
@@ -347,4 +343,8 @@ img {
   bottom: auto;
   border: 10px solid;
   border-color: var(--message-bg-left) transparent transparent transparent;
+}
+
+.opacity-70 {
+  opacity: 0.7 !important;
 }

@@ -3,14 +3,14 @@ import ProfileImage from "./ProfileImage";
 import { formatDate } from "../utils";
 import { ChatInterface } from "../interface/chat";
 import { useAuth } from "../context/AuthContext";
-import { UserInterface } from "../interface/user";
 
 interface Props {
   chat: ChatInterface;
-  isCurrentChat: boolean;
+  isActive: boolean;
+  unreadMessages: number;
 }
 
-const ChatName: React.FC<Props> = ({ chat, isCurrentChat }) => {
+const ChatName: React.FC<Props> = ({ chat, isActive, unreadMessages }) => {
   const { user } = useAuth();
 
   const profileUser = chat.participants.find(
@@ -20,7 +20,7 @@ const ChatName: React.FC<Props> = ({ chat, isCurrentChat }) => {
     <>
       <Container
         fluid
-        className={`chat-name px-0 py-1 ${isCurrentChat && "active"}`}
+        className={`chat-name px-0 py-1 ${isActive && "active"} w-100`}
       >
         <div className="d-flex align-items-center p-2 px-3">
           <ProfileImage
@@ -44,13 +44,56 @@ const ChatName: React.FC<Props> = ({ chat, isCurrentChat }) => {
               </div>
             </div>
             <div
-              className="text-secondary text-truncate"
+              className="text-secondary"
               style={{
-                maxWidth: "100%",
                 fontSize: " .8rem",
               }}
             >
-              {chat.lastMessage || <>&nbsp;</>}
+              {chat.lastMessage ? (
+                <Container
+                  fluid
+                  className="d-flex align-items-center px-0 fw-normal"
+                >
+                  {chat.lastMessage?.sender?._id !== profileUser?._id ? (
+                    <>
+                      <div className="text-primary me-1 opacity-50">you:</div>
+                      <div
+                        className="text-light opacity-70 flex-grow-1 text-truncate "
+                        style={{ width: "100px" }}
+                      >
+                        {chat.lastMessage?.content}
+                      </div>
+                      {!!unreadMessages && (
+                        <div
+                          className="align-self-end bg-primary p-1 px-2 text-light badge"
+                          style={{ borderRadius: "25px" }}
+                        >
+                          {unreadMessages}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="text-light opacity-70 flex-grow-1 text-truncate "
+                        style={{ width: "100px" }}
+                      >
+                        {chat.lastMessage?.content}
+                      </div>
+                      {!!unreadMessages && (
+                        <div
+                          className="align-self-end bg-primary p-1 px-2 text-light badge"
+                          style={{ borderRadius: "25px" }}
+                        >
+                          {unreadMessages}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </Container>
+              ) : (
+                <>&nbsp;</>
+              )}
             </div>
           </div>
         </div>

@@ -1,3 +1,4 @@
+import { MessageInterface } from "./message";
 import { UserInterface } from "./user";
 
 export interface ChatInterface {
@@ -5,7 +6,7 @@ export interface ChatInterface {
   name: string;
   icon: string;
   isGroupChat: boolean;
-  lastMessage: string;
+  lastMessage: MessageInterface;
   participants: UserInterface[];
   admin: string;
   createdAt: string;
