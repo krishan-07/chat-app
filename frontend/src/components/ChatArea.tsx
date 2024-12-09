@@ -72,6 +72,13 @@ const ChatArea: React.FC<Props> = ({
   const [loadingMessages, setLoadingMessages] = useState(false); //To indicate loading of messages
   const [sending, setSending] = useState(false);
 
+  const [isConnected, setIsConnected] = useState(false); // For tracking socket connection
+
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); //To keep track of setTimeoutFunction
+
+  const [isTyping, setIsTyping] = useState(false); // To track if someone is currently typing
+  const [selfTyping, setSelfTyping] = useState(false); // To track if the current user is typing
+
   const bottomRef = useRef<HTMLDivElement | null>(null); //To handle auto scroll
 
   //To handle function while in mobile
@@ -106,7 +113,7 @@ const ChatArea: React.FC<Props> = ({
   const sendChatMessage = async () => {
     if (!socket) return; //if there is no socket connection return
 
-    if (!message.trim && !attachedFiles.length) return;
+    if (!message.trim() && !attachedFiles.length) return;
 
     // Emit a STOP_TYPING_EVENT to inform other users/participants that typing has stopped
     socket.emit(ChatEventEnum.STOP_TYPING_EVENT, chat._id);
@@ -134,13 +141,76 @@ const ChatArea: React.FC<Props> = ({
     updateChatLastMessage(message.chat || "", message);
   };
 
-  useEffect(() => {
-    if (!socket) return;
+  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(e.target.value);
 
+    if (!socket || !isConnected) return;
+
+    if (!selfTyping) {
+      setSelfTyping(true);
+
+      socket.emit(ChatEventEnum.TYPING_EVENT, chat._id);
+    }
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    const timeout = 2000;
+
+    // Set a timeout to stop the typing indication after the timerLength has passed
+    typingTimeoutRef.current = setTimeout(() => {
+      // Emit a stop typing event to the server for the current chat
+      socket.emit(ChatEventEnum.STOP_TYPING_EVENT, chat._id);
+
+      // Reset the user's typing state
+      setSelfTyping(false);
+    }, timeout);
+  };
+
+  const onConnect = () => {
+    setIsConnected(true);
+  };
+
+  const OnDisconnect = () => {
+    setIsConnected(false);
+  };
+
+  /**
+   * Handles the "typing" event on the socket.
+   */
+  const handleOnSocketTyping = (chatId: string) => {
+    // Check if the typing event is for the currently active chat.
+    if (chatId !== chat._id) return;
+
+    // Set the typing state to true for the current chat.
+    setIsTyping(true);
+  };
+
+  /**
+   * Handles the "stop typing" event on the socket.
+   */
+  const handleOnSocketStopTyping = (chatId: string) => {
+    // Check if the stop typing event is for the currently active chat.
+    if (chatId !== chat._id) return;
+
+    // Set the typing state to false for the current chat.
+    setIsTyping(false);
+  };
+
+  useEffect(() => {
+    if (!socket) return alert("socket is not available in useeffect");
+
+    socket.on(ChatEventEnum.CONNECTED_EVENT, onConnect);
+    socket.on(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
     socket.on(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
+    socket.on(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
+    socket.on(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
 
     return () => {
+      socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
+      socket.off(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
       socket.off(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
+      socket.off(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
+      socket.off(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
     };
   }, [socket, chat._id]);
 
@@ -149,9 +219,9 @@ const ChatArea: React.FC<Props> = ({
   }, [chat._id]);
 
   useEffect(() => {
-    // Scroll to the bottom when the component mounts or new message is sent ot received
+    // Scroll to the bottom when the component mounts or new message is sent ot received or someOne is typing
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   return (
     <div className="d-flex flex-column" style={{ height: "100%" }}>
@@ -246,6 +316,19 @@ const ChatArea: React.FC<Props> = ({
 
               return null; // Fallback for unhandled cases (should not occur)
             })}
+            <>
+              {isTyping ? (
+                <Row className="mb-2 message-container receiver">
+                  <Col className="d-flex justify-content-start">
+                    <Card className="message-bubble typing-bubble bg-dark">
+                      <Card.Body className="p-1 d-flex flex-column">
+                        <div className="message-text text-light">Typing...</div>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                </Row>
+              ) : null}
+            </>
           </Container>
         )}
         <div ref={bottomRef} />
@@ -264,9 +347,7 @@ const ChatArea: React.FC<Props> = ({
         <div className="d-flex align-items-center px-1 flex-grow-1 my-2">
           <TextareaAutosize
             value={message}
-            onChange={(event: React.ChangeEvent<HTMLTextAreaElement>) => {
-              setMessage(event.target.value);
-            }}
+            onChange={handleMessageChange}
             onKeyDown={(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
               if (e.key === "Enter" && e.shiftKey) {
                 e.preventDefault();

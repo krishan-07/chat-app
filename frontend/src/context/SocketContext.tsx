@@ -11,10 +11,13 @@ interface ServerToClientEvents {
   [ChatEventEnum.DISCONNECT_EVENT]: () => void;
   [ChatEventEnum.NEW_CHAT_EVENT]: (chat: ChatInterface) => void;
   [ChatEventEnum.MESSAGE_RECEIVED_EVENT]: (message: MessageInterface) => void;
+  [ChatEventEnum.TYPING_EVENT]: (chatId: string) => void;
+  [ChatEventEnum.STOP_TYPING_EVENT]: (chatId: string) => void;
 }
 
 interface ClientToServerEvents {
   [ChatEventEnum.JOIN_CHAT_EVENT]: (chatId: string) => void;
+  [ChatEventEnum.TYPING_EVENT]: (chatId: string) => void;
   [ChatEventEnum.STOP_TYPING_EVENT]: (chatId: string) => void;
 }
 

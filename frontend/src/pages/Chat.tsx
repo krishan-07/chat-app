@@ -138,8 +138,6 @@ const ChatPage = () => {
   const [ShowCreateChat, setShowcreateChat] = useState(false); //To control create chat modal
   const [unreadMessages, setUnreadMessages] = useState<MessageInterface[]>([]); // To track unread messages
 
-  const [isConnected, setIsConnected] = useState(false); // For tracking socket connection
-
   //To store chats, by default retrive it from Local storage
   const [chats, setChats] = useState<ChatInterface[]>(
     () => LocalStorage.get("chats") || []
@@ -177,14 +175,6 @@ const ChatPage = () => {
     }
   };
 
-  const onConnect = () => {
-    setIsConnected(true);
-  };
-
-  const OnDisconnect = () => {
-    setIsConnected(false);
-  };
-
   const onNewChat = (chat: ChatInterface) => {
     setChats((prev) => [chat, ...prev]);
   };
@@ -217,13 +207,9 @@ const ChatPage = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on(ChatEventEnum.CONNECTED_EVENT, onConnect);
-    socket.on(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
     socket.on(ChatEventEnum.NEW_CHAT_EVENT, onNewChat);
 
     return () => {
-      socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
-      socket.off(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
       socket.off(ChatEventEnum.NEW_CHAT_EVENT, onNewChat);
     };
   }, [chats, socket]);
