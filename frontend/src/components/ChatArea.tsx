@@ -217,14 +217,15 @@ const ChatArea: React.FC<Props> = ({
                               : "receiver-bubble"
                           }`}
                         >
-                          {isNewMessageInterface(message) && (
-                            <div
-                              className="text-secondary ms-1"
-                              style={{ fontSize: ".7rem" }}
-                            >
-                              ~ {message.senderName || ""}
-                            </div>
-                          )}
+                          {isNewMessageInterface(message) &&
+                            chat.isGroupChat && (
+                              <div
+                                className="text-secondary ms-1"
+                                style={{ fontSize: ".7rem" }}
+                              >
+                                ~ {message.senderName || ""}
+                              </div>
+                            )}
                           <Card.Body className="p-1 d-flex flex-column">
                             <div className="message-text">
                               {message.content}
