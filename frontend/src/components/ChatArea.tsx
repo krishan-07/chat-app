@@ -11,6 +11,7 @@ import useBreakpoint from "../hooks/useBreakpoint";
 import { IoIosArrowBack } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
 import TextareaAutosize from "react-textarea-autosize";
+import { UserInterface } from "../interface/user";
 
 interface Props {
   chat: ChatInterface;
@@ -26,6 +27,10 @@ interface Props {
   sending: boolean;
 }
 
+interface NewMessageInterface extends MessageInterface {
+  senderName: string;
+}
+
 //function ensures the object is of type MessageInterface by checking for the _id property.
 function isMessageInterface(
   message: MessageInterface | { timeStamp?: string }
@@ -33,7 +38,15 @@ function isMessageInterface(
   return (message as MessageInterface)._id !== undefined;
 }
 
-const refactorMessages = (messages: MessageInterface[]) => {
+function isNewMessageInterface(
+  message: MessageInterface | NewMessageInterface
+): message is NewMessageInterface {
+  return (message as NewMessageInterface).senderName !== undefined;
+}
+
+const refactorMessages = (
+  messages: (MessageInterface | NewMessageInterface)[]
+) => {
   return messages.reduce((acc, curr, i, arr) => {
     const currentDate = new Date(curr.createdAt).toISOString().split("T")[0];
     acc.push(curr); // Add the current message
@@ -51,7 +64,33 @@ const refactorMessages = (messages: MessageInterface[]) => {
     }
 
     return acc;
-  }, [] as Array<{ timeStamp?: string } | MessageInterface>);
+  }, [] as Array<{ timeStamp?: string } | (MessageInterface | NewMessageInterface)>);
+};
+
+const refactorMessagesWithSenderName = (
+  messages: MessageInterface[],
+  user?: UserInterface
+) => {
+  return messages.reduce((acc, curr, index, arr) => {
+    const isLastMessage = index + 1 >= arr.length;
+
+    if (curr.sender._id === user?._id) {
+      // Current user message, no senderName needed
+      acc.push(curr);
+    } else if (
+      !isLastMessage &&
+      curr.sender._id === arr[index + 1].sender._id
+    ) {
+      // Same sender as next message, no senderName needed
+      acc.push(curr);
+    } else {
+      // Add senderName for the last message in a group
+      const senderName = curr.sender.fullname;
+      acc.push({ ...curr, senderName });
+    }
+
+    return acc;
+  }, [] as Array<MessageInterface | NewMessageInterface>);
 };
 
 const ChatArea: React.FC<Props> = ({
@@ -132,56 +171,76 @@ const ChatArea: React.FC<Props> = ({
           </div>
         ) : (
           <Container fluid>
-            {[...refactorMessages(messages)].reverse().map((message, index) => {
-              if ("timeStamp" in message) {
-                return (
-                  <Row key={`timestamp-${index}`} className="mb-2 mt-1">
-                    <div className="center">
-                      <span className="time-stamp px-2 py-1">
-                        {message.timeStamp &&
-                          formatDate(message.timeStamp, false)}
-                      </span>
-                    </div>
-                  </Row>
-                );
-              }
+            {[
+              //refactor messages with timestamps and destructure into new array
+              ...refactorMessages(
+                //refactor messages with senderName
+                refactorMessagesWithSenderName(messages, user || undefined)
+              ),
+            ]
+              //reverse the array to show the current message at the bottom
+              .reverse()
+              //map the array to show message
+              .map((message, index) => {
+                if ("timeStamp" in message) {
+                  return (
+                    <Row key={`timestamp-${index}`} className="mb-2 mt-1">
+                      <div className="center">
+                        <span className="time-stamp px-2 py-1">
+                          {message.timeStamp &&
+                            formatDate(message.timeStamp, false)}
+                        </span>
+                      </div>
+                    </Row>
+                  );
+                }
 
-              if (isMessageInterface(message)) {
-                return (
-                  <Row
-                    key={message._id}
-                    className={`mb-2 message-container ${
-                      user?._id === message.sender._id ? "sender" : "receiver"
-                    }`}
-                  >
-                    <Col
-                      className={
-                        user?._id === message.sender._id
-                          ? "d-flex justify-content-end"
-                          : "d-flex justify-content-start"
-                      }
+                if (isMessageInterface(message)) {
+                  return (
+                    <Row
+                      key={message._id}
+                      className={`mb-2 message-container ${
+                        user?._id === message.sender._id ? "sender" : "receiver"
+                      }`}
                     >
-                      <Card
-                        className={`message-bubble ${
+                      <Col
+                        className={
                           user?._id === message.sender._id
-                            ? "sender-bubble"
-                            : "receiver-bubble"
-                        }`}
+                            ? "d-flex justify-content-end"
+                            : "d-flex justify-content-start"
+                        }
                       >
-                        <Card.Body className="p-1 d-flex flex-column">
-                          <div className="message-text">{message.content}</div>
-                          <div className="chat-time-stamp d-flex justify-content-end">
-                            {formatDate(message.updatedAt)}
-                          </div>
-                        </Card.Body>
-                      </Card>
-                    </Col>
-                  </Row>
-                );
-              }
+                        <Card
+                          className={`message-bubble ${
+                            user?._id === message.sender._id
+                              ? "sender-bubble"
+                              : "receiver-bubble"
+                          }`}
+                        >
+                          {isNewMessageInterface(message) && (
+                            <div
+                              className="text-secondary ms-1"
+                              style={{ fontSize: ".7rem" }}
+                            >
+                              ~ {message.senderName || ""}
+                            </div>
+                          )}
+                          <Card.Body className="p-1 d-flex flex-column">
+                            <div className="message-text">
+                              {message.content}
+                            </div>
+                            <div className="chat-time-stamp d-flex justify-content-end">
+                              {formatDate(message.updatedAt)}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    </Row>
+                  );
+                }
 
-              return null; // Fallback for unhandled cases (should not occur)
-            })}
+                return null; // Fallback for unhandled cases (should not occur)
+              })}
             <>
               {isTyping ? (
                 <Row className="mb-2 message-container receiver">
