@@ -526,7 +526,6 @@ const getAllChats = asyncHandler(async (req, res) => {
     },
     ...commonAggregationPipeline(),
   ]);
-  console.log(chats);
 
   return res
     .status(200)
