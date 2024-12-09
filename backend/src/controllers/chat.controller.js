@@ -49,6 +49,7 @@ const commonAggregationPipeline = () => {
               pipeline: [
                 {
                   $project: {
+                    fullname: 1,
                     username: 1,
                     avatar: 1,
                     email: 1,
@@ -225,13 +226,14 @@ const createGroupChat = asyncHandler(async (req, res) => {
   ]);
 
   const payload = chat[0];
+  console.log(payload);
   if (!payload) throw new ApiError(500, "Internal server error");
 
   payload.participants.forEach((participant) => {
     if (participant._id.toString() === req.user?._id.toString()) return;
     emitSocketEvent(
       req,
-      participant._id,
+      participant._id.toString(),
       ChatEventEnum.NEW_CHAT_EVENT,
       payload
     );

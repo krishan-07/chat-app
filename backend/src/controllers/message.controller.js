@@ -26,6 +26,7 @@ const commonAggregationPipeline = () => {
               username: 1,
               avatar: 1,
               email: 1,
+              fullname: 1,
             },
           },
         ],
