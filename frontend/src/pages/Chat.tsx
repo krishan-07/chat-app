@@ -58,7 +58,6 @@ const ChatPage = () => {
       undefined,
       (res) => {
         const { data } = res;
-        console.log(data);
 
         setChats(data || []);
       },
