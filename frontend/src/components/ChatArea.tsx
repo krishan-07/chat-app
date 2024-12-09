@@ -1,26 +1,29 @@
 import { Button, Card, Col, Container, Row, Spinner } from "react-bootstrap";
 import { ChatInterface } from "../interface/chat";
 import ProfileImage from "./ProfileImage";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 import { IoSendOutline } from "react-icons/io5";
 import { MdOutlineEmojiEmotions } from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
-import { getChatMessages, sendMessage } from "../api";
-import { formatDate, requestHandler } from "../utils";
+import { formatDate } from "../utils";
 import { MessageInterface } from "../interface/message";
 import useBreakpoint from "../hooks/useBreakpoint";
 import { IoIosArrowBack } from "react-icons/io";
-import { useSocket } from "../context/SocketContext";
-import { ChatEventEnum } from "../utils/constants";
 import { useAuth } from "../context/AuthContext";
 import TextareaAutosize from "react-textarea-autosize";
 
 interface Props {
   chat: ChatInterface;
   setShowSideBar: React.Dispatch<React.SetStateAction<boolean>>;
-  setChats: React.Dispatch<React.SetStateAction<ChatInterface[]>>;
-  setUnreadMessages: React.Dispatch<React.SetStateAction<MessageInterface[]>>;
-  updateChatLastMessage: (chatId: string, message: MessageInterface) => void;
+  message: string;
+  setMessage: React.Dispatch<React.SetStateAction<string>>;
+  messages: MessageInterface[];
+  loadingMessages: boolean;
+  isTyping: boolean;
+  handleMessageChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  sendMessage: () => Promise<void>;
+  disabled: boolean;
+  sending: boolean;
 }
 
 //function ensures the object is of type MessageInterface by checking for the _id property.
@@ -54,169 +57,32 @@ const refactorMessages = (messages: MessageInterface[]) => {
 const ChatArea: React.FC<Props> = ({
   chat,
   setShowSideBar,
-  setUnreadMessages,
-  updateChatLastMessage,
+  message,
+  setMessage,
+  messages,
+  loadingMessages,
+  isTyping,
+  handleMessageChange,
+  sendMessage,
+  disabled,
+  sending,
 }) => {
   //import socket hook
-  const { socket } = useSocket();
   const { user } = useAuth();
 
+  //get receiver chat user profile info
   const profileUser = chat.participants.find(
     (participant) => participant._id !== user?._id
-  ); //get receiver chat user profile info
+  );
 
-  const [message, setMessage] = useState(""); //To store the currently typed message
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]); // To store files attached to messages
+  //To handle auto scroll
+  const bottomRef = useRef<HTMLDivElement | null>(null);
 
-  const [messages, setMessages] = useState<MessageInterface[]>([]); //To store the message
-  const [loadingMessages, setLoadingMessages] = useState(false); //To indicate loading of messages
-  const [sending, setSending] = useState(false);
-
-  const [isConnected, setIsConnected] = useState(false); // For tracking socket connection
-
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null); //To keep track of setTimeoutFunction
-
-  const [isTyping, setIsTyping] = useState(false); // To track if someone is currently typing
-  const [selfTyping, setSelfTyping] = useState(false); // To track if the current user is typing
-
-  const bottomRef = useRef<HTMLDivElement | null>(null); //To handle auto scroll
-
-  //To handle function while in mobile
+  //To show chat side bar while in mobile
   const breakPoint = useBreakpoint();
   const handleOpen = () => {
     if (breakPoint === "mobile") setShowSideBar(true);
   };
-
-  const getMessages = async () => {
-    // Check if socket is available, if not, show an alert
-    if (!socket) return alert("Socket not available");
-
-    // Emit an event to join the current chat
-    socket.emit(ChatEventEnum.JOIN_CHAT_EVENT, chat._id);
-
-    // Make an async request to fetch chat messages for the current chat
-    requestHandler(
-      // Fetching messages for the current chat
-      async () => await getChatMessages(chat._id),
-      // Set the state to loading while fetching the messages
-      setLoadingMessages,
-      // After fetching, set the chat messages to the state if available
-      (res) => {
-        const { data } = res;
-        setMessages(data || []);
-      },
-      // Display any error alerts if they occur during the fetch
-      alert
-    );
-  };
-
-  const sendChatMessage = async () => {
-    if (!socket) return; //if there is no socket connection return
-
-    if (!message.trim() && !attachedFiles.length) return;
-
-    // Emit a STOP_TYPING_EVENT to inform other users/participants that typing has stopped
-    socket.emit(ChatEventEnum.STOP_TYPING_EVENT, chat._id);
-
-    await requestHandler(
-      async () => await sendMessage(chat._id, message, attachedFiles),
-      setSending,
-      (res) => {
-        setMessage(""); // Clear the message input
-        setAttachedFiles([]); // Clear the list of attached files
-        setMessages((prev) => [res.data, ...prev]); // Update messages in the UI
-        updateChatLastMessage(chat._id || "", res.data);
-      },
-      alert
-    );
-  };
-
-  const onMessageReceived = (message: MessageInterface) => {
-    //check if the message received belongs to current chat_id
-    // If it belongs to the current chat, update the messages list for the active chat
-    if (message.chat === chat._id) setMessages((prev) => [message, ...prev]);
-    // If it belongs to the current chat, update the messages list for the active chat
-    else setUnreadMessages((prev) => [message, ...prev]);
-
-    updateChatLastMessage(message.chat || "", message);
-  };
-
-  const handleMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setMessage(e.target.value);
-
-    if (!socket || !isConnected) return;
-
-    if (!selfTyping) {
-      setSelfTyping(true);
-
-      socket.emit(ChatEventEnum.TYPING_EVENT, chat._id);
-    }
-
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-
-    const timeout = 2000;
-
-    // Set a timeout to stop the typing indication after the timerLength has passed
-    typingTimeoutRef.current = setTimeout(() => {
-      // Emit a stop typing event to the server for the current chat
-      socket.emit(ChatEventEnum.STOP_TYPING_EVENT, chat._id);
-
-      // Reset the user's typing state
-      setSelfTyping(false);
-    }, timeout);
-  };
-
-  const onConnect = () => {
-    setIsConnected(true);
-  };
-
-  const OnDisconnect = () => {
-    setIsConnected(false);
-  };
-
-  /**
-   * Handles the "typing" event on the socket.
-   */
-  const handleOnSocketTyping = (chatId: string) => {
-    // Check if the typing event is for the currently active chat.
-    if (chatId !== chat._id) return;
-
-    // Set the typing state to true for the current chat.
-    setIsTyping(true);
-  };
-
-  /**
-   * Handles the "stop typing" event on the socket.
-   */
-  const handleOnSocketStopTyping = (chatId: string) => {
-    // Check if the stop typing event is for the currently active chat.
-    if (chatId !== chat._id) return;
-
-    // Set the typing state to false for the current chat.
-    setIsTyping(false);
-  };
-
-  useEffect(() => {
-    if (!socket) return alert("socket is not available in useeffect");
-
-    socket.on(ChatEventEnum.CONNECTED_EVENT, onConnect);
-    socket.on(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
-    socket.on(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
-    socket.on(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
-    socket.on(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
-
-    return () => {
-      socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
-      socket.off(ChatEventEnum.DISCONNECT_EVENT, OnDisconnect);
-      socket.off(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
-      socket.off(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
-      socket.off(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
-    };
-  }, [socket, chat._id]);
-
-  useEffect(() => {
-    getMessages();
-  }, [chat._id]);
 
   useEffect(() => {
     // Scroll to the bottom when the component mounts or new message is sent ot received or someOne is typing
@@ -355,7 +221,7 @@ const ChatArea: React.FC<Props> = ({
               }
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                sendChatMessage();
+                sendMessage();
               }
             }}
             minRows={1}
@@ -371,8 +237,8 @@ const ChatArea: React.FC<Props> = ({
           className="p-2 center message-icons"
           size="sm"
           style={{ background: "transparent" }}
-          disabled={sending || (!message.trim() && !attachedFiles.length)}
-          onClick={sendChatMessage}
+          disabled={disabled}
+          onClick={sendMessage}
         >
           {sending ? (
             <Spinner animation="border" role="status" size="sm" />
