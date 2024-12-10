@@ -357,6 +357,7 @@ const ChatPage = () => {
               sending={sending}
               disabled={sending || (!message.trim() && !attachedFiles.length)}
               setShowSideBar={setShowChatSideBar}
+              setAttachedFiles={setAttachedFiles}
             />
           ) : (
             <>

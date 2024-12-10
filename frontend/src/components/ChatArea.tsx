@@ -1,8 +1,19 @@
-import { Button, Card, Col, Container, Row, Spinner } from "react-bootstrap";
+import {
+  Button,
+  Card,
+  Col,
+  Container,
+  Form,
+  Overlay,
+  Popover,
+  Row,
+  Spinner,
+  Stack,
+} from "react-bootstrap";
 import { ChatInterface } from "../interface/chat";
 import ProfileImage from "./ProfileImage";
-import React, { useEffect, useRef } from "react";
-import { IoSendOutline } from "react-icons/io5";
+import React, { useEffect, useRef, useState } from "react";
+import { IoClose, IoSendOutline } from "react-icons/io5";
 import { MdOutlineEmojiEmotions } from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
 import { formatDate } from "../utils";
@@ -12,6 +23,15 @@ import { IoIosArrowBack } from "react-icons/io";
 import { useAuth } from "../context/AuthContext";
 import TextareaAutosize from "react-textarea-autosize";
 import { UserInterface } from "../interface/user";
+import { CiFileOn, CiImageOn } from "react-icons/ci";
+import { GoVideo } from "react-icons/go";
+import {
+  BsFiletypeDoc,
+  BsFiletypeDocx,
+  BsFiletypePdf,
+  BsFiletypeXls,
+  BsFiletypeXlsx,
+} from "react-icons/bs";
 
 interface Props {
   chat: ChatInterface;
@@ -25,6 +45,7 @@ interface Props {
   sendMessage: () => Promise<void>;
   disabled: boolean;
   sending: boolean;
+  setAttachedFiles: React.Dispatch<React.SetStateAction<File[]>>;
 }
 
 interface NewMessageInterface extends MessageInterface {
@@ -93,6 +114,22 @@ const refactorMessagesWithSenderName = (
   }, [] as Array<MessageInterface | NewMessageInterface>);
 };
 
+const getFileIcon = (type: string) => {
+  if (type.includes(".doc")) {
+    return <BsFiletypeDoc size={25} />;
+  } else if (type.includes(".docx")) {
+    return <BsFiletypeDocx size={25} />;
+  } else if (type.includes("pdf")) {
+    return <BsFiletypePdf size={25} />;
+  } else if (type.includes(".xls")) {
+    return <BsFiletypeXls size={25} />;
+  } else if (type.includes(".xlsx")) {
+    return <BsFiletypeXlsx size={25} />;
+  } else {
+    return "🗂️";
+  }
+};
+
 const ChatArea: React.FC<Props> = ({
   chat,
   setShowSideBar,
@@ -105,6 +142,7 @@ const ChatArea: React.FC<Props> = ({
   sendMessage,
   disabled,
   sending,
+  setAttachedFiles,
 }) => {
   //import socket hook
   const { user } = useAuth();
@@ -123,10 +161,35 @@ const ChatArea: React.FC<Props> = ({
     if (breakPoint === "mobile") setShowSideBar(true);
   };
 
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [showOverlay, setShowOverlay] = useState(false);
+
+  const fileRefs = useRef<{ [key: string]: HTMLInputElement | null }>({
+    docs: null,
+    images: null,
+    videos: null,
+  }); //To contain the refs for file input elements
+  const [files, setFiles] = useState<File[]>([]); //To store the file for making edits
+  const [filesArrayType, setFilesArrayType] = useState<string>(); //To store the file array type
+
+  const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const fileArray = Array.from(e.target.files); // Convert FileList to an array
+      setFiles(fileArray); // Update the local file state
+      setFilesArrayType(fileArray[0].type); //update the type of file array
+      setAttachedFiles(fileArray); //update main attachments
+    }
+  };
+
   useEffect(() => {
     // Scroll to the bottom when the component mounts or new message is sent ot received or someOne is typing
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
+
+  useEffect(() => {
+    //close the overlay when the breakpoint changes
+    setShowOverlay(false);
+  }, [breakPoint]);
 
   return (
     <div className="d-flex flex-column" style={{ height: "100%" }}>
@@ -161,114 +224,272 @@ const ChatArea: React.FC<Props> = ({
       </div>
 
       {/* chat Section */}
-      <div
-        className="chat-background flex-grow-1"
-        style={{ overflowY: "auto" }}
-      >
-        {loadingMessages ? (
-          <div className="center mt-3">
-            <Spinner animation="border" role="status" />
-          </div>
-        ) : (
-          <Container fluid>
-            {[
-              //refactor messages with timestamps and destructure into new array
-              ...refactorMessages(
-                //refactor messages with senderName
-                refactorMessagesWithSenderName(messages, user || undefined)
-              ),
-            ]
-              //reverse the array to show the current message at the bottom
-              .reverse()
-              //map the array to show message
-              .map((message, index) => {
-                if ("timeStamp" in message) {
-                  return (
-                    <Row key={`timestamp-${index}`} className="mb-2 mt-1">
-                      <div className="center">
-                        <span className="time-stamp px-2 py-1">
-                          {message.timeStamp &&
-                            formatDate(message.timeStamp, false)}
-                        </span>
-                      </div>
-                    </Row>
-                  );
-                }
-
-                if (isMessageInterface(message)) {
-                  return (
-                    <Row
-                      key={message._id}
-                      className={`mb-2 message-container ${
-                        user?._id === message.sender._id ? "sender" : "receiver"
-                      }`}
-                    >
-                      <Col
-                        className={
-                          user?._id === message.sender._id
-                            ? "d-flex justify-content-end"
-                            : "d-flex justify-content-start"
-                        }
+      {files.length ? (
+        //show attachments if files are uploaded
+        <div className="bg-dark flex-grow-1 p-1" style={{ overflowY: "auto" }}>
+          {
+            //check if the file array type is of image
+            filesArrayType?.startsWith("image/")
+              ? files.map((file) => (
+                  <div key={file.name}>
+                    <div className="d-flex p-2 align-items-center">
+                      <div
+                        className="center"
+                        style={{
+                          aspectRatio: "1:1",
+                        }}
                       >
-                        <Card
-                          className={`message-bubble ${
-                            user?._id === message.sender._id
-                              ? "sender-bubble"
-                              : "receiver-bubble"
-                          }`}
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={file.name}
+                          height={30}
+                          style={{
+                            objectFit: "contain",
+                          }}
+                        />
+                      </div>
+                      <div className="flex-grow-1 px-2">{file.name}</div>
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setFiles(files.filter((f) => f.name !== file.name));
+                          setAttachedFiles(files);
+                        }}
+                      >
+                        <IoClose size={20} />
+                      </div>
+                    </div>
+                    <hr className="m-0 mb-1" />
+                  </div>
+                ))
+              : //check if the file type is of video
+              filesArrayType?.startsWith("video/")
+              ? files.map((file) => (
+                  <div key={file.name}>
+                    <div className="d-flex p-2 align-items-center">
+                      <div className="center">
+                        <video
+                          style={{
+                            aspectRatio: "1:1",
+                          }}
+                          src={URL.createObjectURL(file)}
+                          height="80px"
+                          width="150px"
+                          controls
+                          autoPlay={false}
+                          muted
                         >
-                          {isNewMessageInterface(message) &&
-                            chat.isGroupChat && (
-                              <div
-                                className="text-secondary ms-1"
-                                style={{ fontSize: ".7rem" }}
-                              >
-                                ~ {message.senderName || ""}
-                              </div>
-                            )}
-                          <Card.Body className="p-1 d-flex flex-column">
-                            <div className="message-text">
-                              {message.content}
-                            </div>
-                            <div className="chat-time-stamp d-flex justify-content-end">
-                              {formatDate(message.updatedAt)}
-                            </div>
-                          </Card.Body>
-                        </Card>
-                      </Col>
-                    </Row>
-                  );
-                }
+                          Your browser does not support the video tag.
+                        </video>
+                      </div>
+                      <div className="flex-grow-1 px-2">{file.name}</div>
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setFiles(files.filter((f) => f.name !== file.name));
+                          setAttachedFiles(files);
+                        }}
+                      >
+                        <IoClose size={20} />
+                      </div>
+                    </div>
+                    <hr className="m-0 mb-1" />
+                  </div>
+                ))
+              : //render files of types docx, pdf, etc...
+                files.map((file) => (
+                  <div key={file.name}>
+                    <div className="d-flex p-2 align-items-center">
+                      <div>{getFileIcon(file.type)}</div>
+                      <div className="flex-grow-1 px-2">{file.name}</div>
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setFiles(files.filter((f) => f.name !== file.name));
+                          setAttachedFiles(files);
+                        }}
+                      >
+                        <IoClose size={20} />
+                      </div>
+                    </div>
+                    <hr className="m-0 mb-1" />
+                  </div>
+                ))
+          }
+        </div>
+      ) : (
+        <div
+          className="chat-background flex-grow-1"
+          style={{ overflowY: "auto" }}
+        >
+          {loadingMessages ? (
+            <div className="center mt-3">
+              <Spinner animation="border" role="status" />
+            </div>
+          ) : (
+            <Container fluid>
+              {[
+                //refactor messages with timestamps and destructure into new array
+                ...refactorMessages(
+                  //refactor messages with senderName
+                  refactorMessagesWithSenderName(messages, user || undefined)
+                ),
+              ]
+                //reverse the array to show the current message at the bottom
+                .reverse()
+                //map the array to show message
+                .map((message, index) => {
+                  if ("timeStamp" in message) {
+                    return (
+                      <Row key={`timestamp-${index}`} className="mb-2 mt-1">
+                        <div className="center">
+                          <span className="time-stamp px-2 py-1">
+                            {message.timeStamp &&
+                              formatDate(message.timeStamp, false)}
+                          </span>
+                        </div>
+                      </Row>
+                    );
+                  }
 
-                return null; // Fallback for unhandled cases (should not occur)
-              })}
-            <>
-              {isTyping ? (
-                <Row className="mb-2 message-container receiver">
-                  <Col className="d-flex justify-content-start">
-                    <Card className="message-bubble typing-bubble bg-dark">
-                      <Card.Body className="p-1 d-flex flex-column">
-                        <div className="message-text text-light">Typing...</div>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                </Row>
-              ) : null}
-            </>
-          </Container>
-        )}
-        <div ref={bottomRef} />
-      </div>
+                  if (isMessageInterface(message)) {
+                    return (
+                      <Row
+                        key={message._id}
+                        className={`mb-2 message-container ${
+                          user?._id === message.sender._id
+                            ? "sender"
+                            : "receiver"
+                        }`}
+                      >
+                        <Col
+                          className={
+                            user?._id === message.sender._id
+                              ? "d-flex justify-content-end"
+                              : "d-flex justify-content-start"
+                          }
+                        >
+                          <Card
+                            className={`message-bubble ${
+                              user?._id === message.sender._id
+                                ? "sender-bubble"
+                                : "receiver-bubble"
+                            }`}
+                          >
+                            {isNewMessageInterface(message) &&
+                              chat.isGroupChat && (
+                                <div
+                                  className="text-secondary ms-1"
+                                  style={{ fontSize: ".7rem" }}
+                                >
+                                  ~ {message.senderName || ""}
+                                </div>
+                              )}
+                            <Card.Body className="p-1 d-flex flex-column">
+                              <div className="message-text">
+                                {message.content}
+                              </div>
+                              <div className="chat-time-stamp d-flex justify-content-end">
+                                {formatDate(message.updatedAt)}
+                              </div>
+                            </Card.Body>
+                          </Card>
+                        </Col>
+                      </Row>
+                    );
+                  }
+
+                  return null; // Fallback for unhandled cases (should not occur)
+                })}
+              <>
+                {isTyping ? (
+                  <Row className="mb-2 message-container receiver">
+                    <Col className="d-flex justify-content-start">
+                      <Card className="message-bubble typing-bubble bg-dark">
+                        <Card.Body className="p-1 d-flex flex-column">
+                          <div className="message-text text-light">
+                            Typing...
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  </Row>
+                ) : null}
+              </>
+            </Container>
+          )}
+          <div ref={bottomRef} />
+        </div>
+      )}
 
       {/* Typing section */}
       <div className="chat-typing d-flex align-items-center">
         <div className="cursor-pointer p-2 center message-icons">
           <MdOutlineEmojiEmotions size={25} />
         </div>
-
-        <div className="cursor-pointer p-2 center message-icons">
+        <div
+          className="cursor-pointer p-2 center message-icons"
+          onClick={() => setShowOverlay(!showOverlay)}
+          ref={overlayRef}
+        >
           <ImAttachment size={21} />
         </div>
+        <Overlay
+          target={overlayRef.current}
+          placement="top"
+          show={showOverlay}
+          onHide={() => setShowOverlay(false)}
+          rootClose
+        >
+          <Popover id="popover-basic" className="bg-popover p-2">
+            <Popover.Body className="text-light p-0">
+              <Stack gap={1} className="px-1">
+                <Form.Group controlId="file-control">
+                  <Form.Label className="cursor-pointer">
+                    <CiFileOn size={25} />
+                    <Form.Text className="text-light ps-2">Files</Form.Text>
+                  </Form.Label>
+                  <Form.Control
+                    ref={(e: HTMLInputElement) => (fileRefs.current.docs = e)}
+                    type="file"
+                    accept=".pdf, .doc, .docx, .xls"
+                    className="d-none"
+                    onChange={handleFilesChange}
+                    multiple
+                  ></Form.Control>
+                </Form.Group>
+                <Form.Group controlId="image-control">
+                  <Form.Label className="cursor-pointer">
+                    <CiImageOn size={25} />
+                    <Form.Text className="text-light ps-2">Images</Form.Text>
+                  </Form.Label>
+                  <Form.Control
+                    ref={(e: HTMLInputElement) => (fileRefs.current.images = e)}
+                    type="file"
+                    accept="image/*"
+                    className="d-none"
+                    onChange={handleFilesChange}
+                    multiple
+                  ></Form.Control>
+                </Form.Group>
+                <Form.Group controlId="video-control">
+                  <Form.Label className="cursor-pointer">
+                    <GoVideo size={25} />
+                    <Form.Text className="text-light ps-2">Videos</Form.Text>
+                  </Form.Label>
+                  <Form.Control
+                    ref={(e: HTMLInputElement) => (fileRefs.current.videos = e)}
+                    type="file"
+                    accept="video/mp4"
+                    onChange={handleFilesChange}
+                    className="d-none"
+                    multiple
+                  ></Form.Control>
+                </Form.Group>
+              </Stack>
+            </Popover.Body>
+          </Popover>
+        </Overlay>
 
         <div className="d-flex align-items-center px-1 flex-grow-1 my-2">
           <TextareaAutosize
