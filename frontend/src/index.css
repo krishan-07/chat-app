@@ -367,3 +367,22 @@ img {
 .bg-popover {
   background: var(--header-bg) !important;
 }
+
+.attachment-container {
+  max-width: 200px;
+  max-height: 300px;
+  overflow: hidden;
+}
+.center-absolute {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  margin: auto;
+}
+.download-btn {
+  color: white;
+  background: #00000060;
+  border-radius: 50px;
+}

@@ -1,4 +1,5 @@
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -14,7 +15,7 @@ import { ChatInterface } from "../interface/chat";
 import ProfileImage from "./ProfileImage";
 import React, { useEffect, useRef, useState } from "react";
 import { IoClose, IoSendOutline } from "react-icons/io5";
-import { MdOutlineEmojiEmotions } from "react-icons/md";
+import { MdOutlineEmojiEmotions, MdOutlineFileDownload } from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
 import { formatDate } from "../utils";
 import { MessageInterface } from "../interface/message";
@@ -24,7 +25,6 @@ import { useAuth } from "../context/AuthContext";
 import TextareaAutosize from "react-textarea-autosize";
 import { UserInterface } from "../interface/user";
 import { CiFileOn, CiImageOn } from "react-icons/ci";
-import { GoVideo } from "react-icons/go";
 import {
   BsFiletypeDoc,
   BsFiletypeDocx,
@@ -32,6 +32,7 @@ import {
   BsFiletypeXls,
   BsFiletypeXlsx,
 } from "react-icons/bs";
+import { PiFileVideo } from "react-icons/pi";
 
 interface Props {
   chat: ChatInterface;
@@ -318,6 +319,7 @@ const ChatArea: React.FC<Props> = ({
           }
         </div>
       ) : (
+        //show messages
         <div
           className="chat-background flex-grow-1"
           style={{ overflowY: "auto" }}
@@ -376,17 +378,117 @@ const ChatArea: React.FC<Props> = ({
                                 : "receiver-bubble"
                             }`}
                           >
-                            {isNewMessageInterface(message) &&
-                              chat.isGroupChat && (
-                                <div
-                                  className="text-secondary ms-1"
-                                  style={{ fontSize: ".7rem" }}
-                                >
-                                  ~ {message.senderName || ""}
-                                </div>
-                              )}
+                            {
+                              //show sender's name if it is group chat
+                              isNewMessageInterface(message) &&
+                                chat.isGroupChat && (
+                                  <div
+                                    className="text-secondary ms-1"
+                                    style={{ fontSize: ".7rem" }}
+                                  >
+                                    ~ {message.senderName || ""}
+                                  </div>
+                                )
+                            }
                             <Card.Body className="p-1 d-flex flex-column">
-                              <div className="message-text">
+                              {message.attachments?.map((att) => {
+                                const url = att.url.split("/upload/");
+                                const downloadLink = `${url[0]}/upload/fl_attachment/${url[1]}`;
+                                //render attachments which are of file type...
+                                if (
+                                  /\.(docx|pdf|xls|xlsx|pptx|txt|csv)$/i.test(
+                                    att.url
+                                  )
+                                )
+                                  return (
+                                    <div
+                                      key={att.url}
+                                      className="mb-1 position-relative attachment-container"
+                                    >
+                                      <div className="d-flex align-items-center">
+                                        <div>{getFileIcon(att.url)}</div>
+                                        <div
+                                          className="flex-shrink-1 text-wrap px-1"
+                                          style={{ width: "130px" }}
+                                        >
+                                          {att.url.split("/").pop()}
+                                        </div>
+                                        <div className="flex-shrink-1 px-1">
+                                          <Alert.Link
+                                            href={downloadLink}
+                                            download={att.url.split("/").pop()}
+                                            className="p-1 download-btn"
+                                          >
+                                            <MdOutlineFileDownload size={25} />
+                                          </Alert.Link>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                //render attachments of image type
+                                else if (att.type.includes("image"))
+                                  return (
+                                    <div
+                                      key={att.url}
+                                      className="mb-1 position-relative attachment-container"
+                                    >
+                                      <img
+                                        src={att.url}
+                                        alt={att.type}
+                                        style={{
+                                          objectFit: "contain",
+                                        }}
+                                      />
+                                      <div className="position-absolute center center-absolute">
+                                        <Alert.Link
+                                          href={downloadLink}
+                                          download={att.url.split("/").pop()}
+                                          className="p-1 download-btn"
+                                        >
+                                          <MdOutlineFileDownload size={25} />
+                                        </Alert.Link>
+                                      </div>
+                                    </div>
+                                  );
+                                else
+                                  return (
+                                    <div
+                                      key={att.url}
+                                      className="mb-1 position-relative attachment-container"
+                                    >
+                                      <video
+                                        src={att.url}
+                                        controls
+                                        muted
+                                        autoPlay={false}
+                                        width={200}
+                                        height={120}
+                                      />
+                                      <div
+                                        className="position-absolute center"
+                                        style={{
+                                          top: "5px",
+                                          right: "2px",
+                                          zIndex: "1",
+                                        }}
+                                      >
+                                        <Alert.Link
+                                          href={downloadLink}
+                                          download={att.url.split("/").pop()}
+                                          className="p-1 download-btn"
+                                        >
+                                          <MdOutlineFileDownload size={25} />
+                                        </Alert.Link>
+                                      </div>
+                                    </div>
+                                  );
+                              })}
+                              <div
+                                className="message-text"
+                                style={
+                                  message.attachments && { maxWidth: "200px" }
+                                }
+                              >
                                 {message.content}
                               </div>
                               <div className="chat-time-stamp d-flex justify-content-end">
@@ -474,7 +576,7 @@ const ChatArea: React.FC<Props> = ({
                 </Form.Group>
                 <Form.Group controlId="video-control">
                   <Form.Label className="cursor-pointer">
-                    <GoVideo size={25} />
+                    <PiFileVideo size={25} />
                     <Form.Text className="text-light ps-2">Videos</Form.Text>
                   </Form.Label>
                   <Form.Control
@@ -519,7 +621,10 @@ const ChatArea: React.FC<Props> = ({
           size="sm"
           style={{ background: "transparent" }}
           disabled={disabled}
-          onClick={sendMessage}
+          onClick={() => {
+            sendMessage();
+            setFiles([]);
+          }}
         >
           {sending ? (
             <Spinner animation="border" role="status" size="sm" />
