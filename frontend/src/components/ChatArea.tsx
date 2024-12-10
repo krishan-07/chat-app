@@ -185,7 +185,7 @@ const ChatArea: React.FC<Props> = ({
   useEffect(() => {
     // Scroll to the bottom when the component mounts or new message is sent ot received or someOne is typing
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, files]);
 
   useEffect(() => {
     //close the overlay when the breakpoint changes
