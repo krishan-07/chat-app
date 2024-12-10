@@ -8,13 +8,18 @@ const messageSchema = new Schema(
     },
     content: {
       type: String,
-      required: true,
     },
     attachments: {
       type: [
         {
-          url: String,
-          type: String,
+          url: {
+            type: String,
+            required: true,
+          },
+          type: {
+            type: String,
+            required: true,
+          },
         },
       ],
       default: [],

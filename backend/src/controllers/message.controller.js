@@ -90,15 +90,30 @@ const sendMessage = asyncHandler(async (req, res) => {
   const attachments = [];
 
   if (req.files && req.files?.attachments?.length > 0) {
-    req.files.attachments.map((attachment) => {
-      const file = uploadOnCloudinary(attachment);
-      if (!file.url)
-        throw new ApiError(400, "Error while uploading on cloudinary");
-      attachments.push({
-        url: file.secure_url,
-        type: file.resource_type,
+    try {
+      // Use `map` to create an array of promises
+      const uploadPromises = req.files.attachments.map(async (attachment) => {
+        const file = await uploadOnCloudinary(attachment.path);
+        if (!file.secure_url) {
+          throw new ApiError(400, "Error while uploading on Cloudinary");
+        }
+        return {
+          url: file.secure_url,
+          type: file.resource_type,
+        };
       });
-    });
+
+      // Wait for all promises to resolve
+      const uploadedFiles = await Promise.all(uploadPromises);
+
+      // Push the results into the attachments array
+      attachments.push(...uploadedFiles);
+
+      console.log(attachments);
+    } catch (error) {
+      console.error("Error uploading files:", error);
+      throw new ApiError(500, "Failed to upload files");
+    }
   }
 
   const message = await Message.create({
