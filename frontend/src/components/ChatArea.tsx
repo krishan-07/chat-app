@@ -33,6 +33,8 @@ import {
   BsFiletypeXlsx,
 } from "react-icons/bs";
 import { PiFileVideo } from "react-icons/pi";
+import Picker from "@emoji-mart/react";
+import data from "@emoji-mart/data";
 
 interface Props {
   chat: ChatInterface;
@@ -162,8 +164,11 @@ const ChatArea: React.FC<Props> = ({
     if (breakPoint === "mobile") setShowSideBar(true);
   };
 
+  //To store the reference of the element from where the attachments overlay should be shown
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [showOverlay, setShowOverlay] = useState(false);
+  const [showOverlay, setShowOverlay] = useState(false); //To toggle attachments overlay visibility
+
+  const [showEmoji, setShowEmoji] = useState(false); //To toggle emoji picker visibility
 
   const fileRefs = useRef<{ [key: string]: HTMLInputElement | null }>({
     docs: null,
@@ -525,10 +530,37 @@ const ChatArea: React.FC<Props> = ({
       )}
 
       {/* Typing section */}
-      <div className="chat-typing d-flex align-items-center">
-        <div className="cursor-pointer p-2 center message-icons">
+      <div className="chat-typing d-flex align-items-center position-relative">
+        {/* emoji picker */}
+        {showEmoji && (
+          <div
+            className="position-absolute"
+            style={{ top: "-435px", left: "8px" }}
+          >
+            <Picker
+              data={data}
+              onEmojiSelect={(e: { native: string }) => {
+                setMessage((prev) => prev + e.native);
+              }}
+              perLine={8}
+              emojiSize={24}
+              theme="dark"
+              previewPosition="none"
+              onClickOutside={() => setShowEmoji(false)}
+            />
+          </div>
+        )}
+        <div
+          className="cursor-pointer p-2 center message-icons"
+          onClick={(e) => {
+            e.stopPropagation(); //prevents the button click from propagating to the onClickOutside handler.
+            setShowEmoji((prev) => !prev);
+          }}
+        >
           <MdOutlineEmojiEmotions size={25} />
         </div>
+
+        {/* attachments */}
         <div
           className="cursor-pointer p-2 center message-icons"
           onClick={() => setShowOverlay(!showOverlay)}
@@ -593,6 +625,7 @@ const ChatArea: React.FC<Props> = ({
           </Popover>
         </Overlay>
 
+        {/* text area */}
         <div className="d-flex align-items-center px-1 flex-grow-1 my-2">
           <TextareaAutosize
             value={message}
@@ -615,6 +648,7 @@ const ChatArea: React.FC<Props> = ({
           />
         </div>
 
+        {/* send button */}
         <Button
           variant="dark"
           className="p-2 center message-icons"
