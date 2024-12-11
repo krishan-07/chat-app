@@ -71,6 +71,9 @@ img {
   .holder {
     min-width: 0px !important;
   }
+  .profile-section {
+    width: 100% !important;
+  }
 }
 @media screen and (min-width: 600px) and (max-width: 912px) {
   .chat-sidebar {
@@ -79,9 +82,15 @@ img {
   .holder {
     min-width: 295px !important;
   }
+  .profile-section {
+    width: 300px !important;
+  }
 }
 @media screen and (min-width: 912px) {
   .chat-sidebar {
+    width: 450px !important;
+  }
+  .profile-section {
     width: 450px !important;
   }
 }
@@ -98,9 +107,16 @@ img {
 .menu-sidebar {
   background-color: var(--header-bg) !important;
   color: var(--color-white) !important;
-  width: 65px !important;
+  width: 110px !important;
 }
-
+.profile-section {
+  background-color: var(--side-bar-bg) !important;
+  color: var(--color-white) !important;
+  border-right: none !important;
+}
+.profile-section-header {
+  background-color: var(--header-bg) !important;
+}
 .holder {
   min-width: 450px;
   max-width: 100%;
@@ -385,4 +401,7 @@ img {
   color: white;
   background: #00000060;
   border-radius: 50px;
+}
+.w-30 {
+  min-width: 30% !important;
 }

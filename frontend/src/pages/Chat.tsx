@@ -1,4 +1,12 @@
-import { Button, Container, Offcanvas, Stack } from "react-bootstrap";
+import {
+  Button,
+  Container,
+  Form,
+  Offcanvas,
+  Row,
+  Spinner,
+  Stack,
+} from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useRef, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
@@ -6,8 +14,14 @@ import { GiHamburgerMenu } from "react-icons/gi";
 import { BsChatText } from "react-icons/bs";
 import { IoClose, IoSettingsSharp } from "react-icons/io5";
 import CreateChatModal from "../components/CreateChat/CreateChatModal";
-import { LocalStorage, requestHandler } from "../utils";
-import { getAllChats, getChatMessages, sendMessage } from "../api";
+import { blobUrlToFile, LocalStorage, requestHandler } from "../utils";
+import {
+  getAllChats,
+  getChatMessages,
+  sendMessage,
+  updateAvatar,
+  updateUserDetails,
+} from "../api";
 import ChatName from "../components/ChatName";
 import ChatArea from "../components/ChatArea";
 import { ChatInterface } from "../interface/chat";
@@ -16,12 +30,21 @@ import { useSocket } from "../context/SocketContext";
 import { ChatEventEnum } from "../utils/constants";
 import { MessageInterface } from "../interface/message";
 import { TypeAnimation } from "react-type-animation";
+import { BiLogOut } from "react-icons/bi";
+import ProfileImage from "../components/ProfileImage";
+import { MdModeEditOutline } from "react-icons/md";
+import { Crop } from "react-image-crop";
+import ImageCropModal from "../components/CropImage/ImageCropModal";
+import { UserInterface } from "../interface/user";
 
 const ChatPage = () => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { socket } = useSocket();
 
+  //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
+
+  const [currentUser, setCurrentUser] = useState<UserInterface | null>(user); //To hold the current user
 
   const currentChatRef = useRef<ChatInterface | null>(null); //To hold the current chat reference
 
@@ -29,6 +52,15 @@ const ChatPage = () => {
   const [showMenu, setShowMenu] = useState(false); //To control the menu
   const [showCreateChat, setshowCreateChat] = useState(false); //To control create chat modal
   const [unreadMessages, setUnreadMessages] = useState<MessageInterface[]>([]); // To track unread messages
+  const [showUserProfile, setShowUserProfile] = useState(false); //To control User profile side bar
+  const [userFullname, setUserFullname] = useState(currentUser?.fullname || ""); //To update the fullname
+
+  const fileInputRef = useRef<HTMLInputElement>(null); //To hold input ref for changing user avatar
+
+  const [imgSrc, setImgSrc] = useState(""); //To hold the uploaded avatar
+  const [crop, setCrop] = useState<Crop>(); //To hold cropped uploaded avatar
+  const [showImageCropper, setShowImageCropper] = useState(false); //To control the image cropper modal
+  const [isUserProfileUpdating, setIsUserProfileUpdating] = useState(false); //To show loading state when user data is updating
 
   //To store chats, by default retrive it from Local storage
   const [chats, setChats] = useState<ChatInterface[]>([]);
@@ -47,8 +79,64 @@ const ChatPage = () => {
   const [isTyping, setIsTyping] = useState(false); // To track if someone is currently typing
   const [selfTyping, setSelfTyping] = useState(false); // To track if the current user is typing
 
+  const handleUserProfileClose = () => {
+    setShowUserProfile(false); //close the user profile offcanvas
+    setImgSrc(""); //remove updated avatar
+  };
+
   const handleLogout = async () => {
     await logout();
+  };
+
+  //To handle the avatar updation
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCrop(undefined);
+      if (!file.type.startsWith("image/")) {
+        alert("Only image files are allowed!");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setImgSrc(reader.result?.toString() || "");
+      reader.readAsDataURL(file);
+
+      setShowImageCropper(true);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const updateUserData = async () => {
+    setIsUserProfileUpdating(true);
+    //if only avatar is updated send api req to update avatar
+    if (imgSrc)
+      await requestHandler(
+        async () => await updateAvatar(await blobUrlToFile(imgSrc)),
+        undefined,
+        (res) => {
+          setCurrentUser(res.data);
+          LocalStorage.set("user", res.data);
+        },
+        alert
+      );
+    //if only fullname is updated send api req to update userDetails
+    if (userFullname !== currentUser?.fullname)
+      await requestHandler(
+        async () => await updateUserDetails(userFullname, ""),
+        undefined,
+        (res) => {
+          setCurrentUser(res.data);
+          LocalStorage.set("user", res.data);
+        },
+        alert
+      );
+
+    setIsUserProfileUpdating(false);
+    setImgSrc("");
+    setShowUserProfile(false);
   };
 
   const getChats = async () => {
@@ -296,7 +384,6 @@ const ChatPage = () => {
                 //set the current chat
                 LocalStorage.set("current-chat", chat);
                 currentChatRef.current = chat;
-                console.log(chat);
 
                 getMessages();
 
@@ -330,25 +417,180 @@ const ChatPage = () => {
         onHide={() => setShowMenu(false)}
         scroll={false}
       >
-        <Offcanvas.Header>
+        <Offcanvas.Header className="justify-content-end">
           <IoClose
             size={35}
             className="cursor-pointer"
             onClick={() => setShowMenu(false)}
           />
         </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex justify-content-between align-items-center flex-column">
-          <BsChatText size={28} className="cursor-pointer" />
-          <IoSettingsSharp size={28} className="cursor-pointer" />
+        <Offcanvas.Body className="d-flex justify-content-between lign-items-center flex-column p-1">
+          <div
+            className="cursor-pointer ms-1"
+            onClick={() => {
+              setShowMenu(false);
+              if (breakPoint === "mobile") setShowChatSideBar(false);
+            }}
+          >
+            <div className="d-flex">
+              <div className="w-30 center">
+                <BsChatText size={25} />
+              </div>
+              <div className="ps-1 flex-grow-1">Chats</div>
+            </div>
+          </div>
+          <div className="d-flex flex-column">
+            <div
+              className="mb-3 d-flex align-items-center cursor-pointer"
+              onClick={() => {
+                setShowUserProfile(true);
+              }}
+            >
+              <div className="w-30 center">
+                <ProfileImage
+                  size="28px"
+                  src={currentUser?.avatar}
+                  alt="user-profile"
+                />
+              </div>
+              <div className="ps-1 flex-grow-1">Profile</div>
+            </div>
+
+            <div className="mb-3 d-flex align-items-center cursor-pointer">
+              <div className="w-30 center">
+                <IoSettingsSharp size={25} />
+              </div>
+              <div className="ps-1 flex-grow-1">Settings</div>
+            </div>
+            <div
+              className="mb-3 d-flex align-items-center cursor-pointer"
+              onClick={handleLogout}
+            >
+              <div className="w-30 center">
+                <BiLogOut size={28} title="logout" />
+              </div>
+              <div className="ps-1 flex-grow-1">Logout</div>
+            </div>
+          </div>
         </Offcanvas.Body>
       </Offcanvas>
 
+      {/* profile section */}
+      <Offcanvas
+        className="profile-section"
+        show={showUserProfile}
+        backdrop={true}
+        scroll={false}
+        onHide={handleUserProfileClose}
+      >
+        <Offcanvas.Header className="justify-content-between profile-section-header">
+          <Offcanvas.Title>Profile</Offcanvas.Title>
+          <div>
+            <IoClose
+              size={30}
+              className="cursor-pointer"
+              onClick={handleUserProfileClose}
+            />
+          </div>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <Stack gap={1}>
+            <Row className="justify-content-center">
+              <div className="center mb-3">
+                <div className="my-1">
+                  <ProfileImage
+                    src={imgSrc ? imgSrc : currentUser?.avatar}
+                    alt="profile-image"
+                    size="150px"
+                  />
+                </div>
+                <div className="align-self-end">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    id="file"
+                    accept="image/*"
+                    className="d-none"
+                    onChange={handleFileChange}
+                  />
+                  <label
+                    htmlFor="file"
+                    style={{
+                      bottom: "10px",
+                      right: "10px",
+                      position: "relative",
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <MdModeEditOutline size={27} />
+                    <ImageCropModal
+                      show={showImageCropper}
+                      handleClose={() => setShowImageCropper(false)}
+                      imgSrc={imgSrc}
+                      setImgSrc={setImgSrc}
+                      crop={crop}
+                      setCrop={setCrop}
+                    />
+                  </label>
+                </div>
+              </div>
+            </Row>
+            <Form.Group controlId="user-fullname">
+              <Form.Label>Fullname</Form.Label>
+              <Form.Control
+                type="input"
+                value={userFullname}
+                onChange={(e) => setUserFullname(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group controlId="username">
+              <Form.Label>Username</Form.Label>
+              <Form.Control
+                type="input"
+                value={currentUser?.username}
+                disabled
+              ></Form.Control>
+            </Form.Group>
+            <Form.Group controlId="email">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="input"
+                value={currentUser?.email}
+                disabled
+              ></Form.Control>
+            </Form.Group>
+          </Stack>
+          <Stack
+            gap={2}
+            direction="horizontal"
+            className="justify-content-end mt-3"
+          >
+            <Button variant="secondary" onClick={handleUserProfileClose}>
+              Close
+            </Button>
+            <Button
+              variant="primary"
+              onClick={updateUserData}
+              disabled={
+                !imgSrc.trim() && userFullname.trim() === currentUser?.fullname
+              }
+            >
+              {isUserProfileUpdating ? (
+                <Spinner size="sm" animation="border" />
+              ) : (
+                "Update"
+              )}
+            </Button>
+          </Stack>
+        </Offcanvas.Body>
+      </Offcanvas>
       {/* create chat modal */}
       <CreateChatModal
         show={showCreateChat}
         setShow={setshowCreateChat}
         onSucess={(chat) => {
           setChats([chat, ...chats]);
+          if (breakPoint === "mobile") setShowChatSideBar(true);
         }}
       />
 
