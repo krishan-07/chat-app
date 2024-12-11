@@ -85,7 +85,6 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
             label: user.username,
             avatar: user.avatar,
           }));
-          console.log(data);
           setOptions(data);
         }
       },

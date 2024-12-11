@@ -67,7 +67,7 @@ function PostRegister() {
 
       LocalStorage.set("user", newUser.data.data);
     } catch (error) {
-      console.log(error);
+      console.warn(error);
       alert(error);
     }
     setIsLoading(false);
