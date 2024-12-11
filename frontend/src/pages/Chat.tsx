@@ -1,4 +1,4 @@
-import { Button, Offcanvas, Stack } from "react-bootstrap";
+import { Button, Container, Offcanvas, Stack } from "react-bootstrap";
 import { useAuth } from "../context/AuthContext";
 import React, { useEffect, useRef, useState } from "react";
 import { FaRegEdit } from "react-icons/fa";
@@ -15,6 +15,7 @@ import useBreakpoint from "../hooks/useBreakpoint";
 import { useSocket } from "../context/SocketContext";
 import { ChatEventEnum } from "../utils/constants";
 import { MessageInterface } from "../interface/message";
+import { TypeAnimation } from "react-type-animation";
 
 const ChatPage = () => {
   const { logout } = useAuth();
@@ -26,7 +27,7 @@ const ChatPage = () => {
 
   const [showChatSideBar, setShowChatSideBar] = useState(true); //To control the chat side bar
   const [showMenu, setShowMenu] = useState(false); //To control the menu
-  const [ShowCreateChat, setShowcreateChat] = useState(false); //To control create chat modal
+  const [showCreateChat, setshowCreateChat] = useState(false); //To control create chat modal
   const [unreadMessages, setUnreadMessages] = useState<MessageInterface[]>([]); // To track unread messages
 
   //To store chats, by default retrive it from Local storage
@@ -271,12 +272,23 @@ const ChatPage = () => {
             <FaRegEdit
               size={28}
               className="cursor-pointer"
-              onClick={() => setShowcreateChat(true)}
+              onClick={() => setshowCreateChat(true)}
             />
           </Stack>
         </Offcanvas.Header>
         <hr className="mt-0" />
         <Offcanvas.Body className="p-0">
+          {!chats.length && (
+            <Container className="d-flle">
+              <Button
+                variant="outline-primary"
+                onClick={() => setshowCreateChat(true)}
+                className="w-100"
+              >
+                + NEW CHAT
+              </Button>
+            </Container>
+          )}
           {chats.map((chat) => (
             <div
               key={chat._id}
@@ -333,8 +345,8 @@ const ChatPage = () => {
 
       {/* create chat modal */}
       <CreateChatModal
-        show={ShowCreateChat}
-        setShow={setShowcreateChat}
+        show={showCreateChat}
+        setShow={setshowCreateChat}
         onSucess={(chat) => {
           setChats([chat, ...chats]);
         }}
@@ -360,14 +372,32 @@ const ChatPage = () => {
               setAttachedFiles={setAttachedFiles}
             />
           ) : (
-            <>
-              <div className="center h2 mt-5" style={{ height: "80%" }}>
-                <div className="typewriter-text">Welcome to Chat App</div>
+            <Container className="h-100">
+              <div className="center h3 px-4 h-100">
+                <div className="d-flex flex-column text-center">
+                  <TypeAnimation
+                    sequence={[
+                      "Welcome to Chat App",
+                      1000, // wait 1s before replacing "Mice" with "Hamsters"
+                      "Start chatting now!",
+                      1000,
+                    ]}
+                    wrapper="span"
+                    speed={50}
+                    style={{ fontSize: "2em", display: "inline-block" }}
+                    repeat={0}
+                  />
+                  <div className="center mt-3">
+                    <Button
+                      variant="outline-primary"
+                      onClick={() => setshowCreateChat(true)}
+                    >
+                      + NEW CHAT
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="center">
-                <Button onClick={handleLogout}>Logout </Button>
-              </div>
-            </>
+            </Container>
           )}
         </div>
       </div>

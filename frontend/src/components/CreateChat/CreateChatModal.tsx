@@ -160,6 +160,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
             styles={customStyles}
             isMulti={isGroupChat}
             isSearchable={true}
+            noOptionsMessage={() => "No users found"}
           />
         </div>
         <Stack direction="horizontal" gap={1}>
