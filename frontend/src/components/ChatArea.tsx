@@ -409,7 +409,7 @@ const ChatArea: React.FC<Props> = ({
                                         <div>{getFileIcon(att.url)}</div>
                                         <div
                                           className="flex-shrink-1 text-wrap px-1"
-                                          style={{ width: "130px" }}
+                                          style={{ width: "134px" }}
                                         >
                                           {att.url.split("/").pop()}
                                         </div>
