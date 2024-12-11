@@ -48,7 +48,14 @@ function App() {
         }
       ></Route>
       <Route path="/redirect" element={<Redirect />}></Route>
-      <Route path="/register-redirect" element={<PostRegister />}></Route>
+      <Route
+        path="/register-redirect"
+        element={
+          <PrivateRoute>
+            <PostRegister />
+          </PrivateRoute>
+        }
+      ></Route>
 
       <Route path="*" element={<p>404 Not found</p>} />
     </Routes>
