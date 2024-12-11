@@ -507,8 +507,6 @@ const searchAvailableUser = asyncHandler(async (req, res) => {
     },
   ]);
 
-  if (!users.length) throw new ApiError(500, "Internal server error");
-
   return res
     .status(200)
     .json(new ApiResponse(200, users, "Users fetched successfully"));
