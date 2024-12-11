@@ -36,6 +36,7 @@ import { MdModeEditOutline } from "react-icons/md";
 import { Crop } from "react-image-crop";
 import ImageCropModal from "../components/CropImage/ImageCropModal";
 import { UserInterface } from "../interface/user";
+import { IoIosArrowBack } from "react-icons/io";
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
@@ -350,7 +351,17 @@ const ChatPage = () => {
         scroll={true}
       >
         <Offcanvas.Header className="justify-content-between chat-sidebar-header">
-          <Offcanvas.Title>Chat App</Offcanvas.Title>
+          <Offcanvas.Title className="d-flex">
+            {breakPoint === "mobile" && (
+              <div
+                className="px-2 cursor-pointer back-arrow"
+                onClick={() => setShowChatSideBar(false)}
+              >
+                <IoIosArrowBack size={30} />
+              </div>
+            )}
+            Chat App
+          </Offcanvas.Title>
           <Stack gap={3} direction="horizontal">
             <GiHamburgerMenu
               size={30}
