@@ -5,6 +5,7 @@ import {
   Col,
   Container,
   Form,
+  Offcanvas,
   Overlay,
   Popover,
   Row,
@@ -164,6 +165,8 @@ const ChatArea: React.FC<Props> = ({
     if (breakPoint === "mobile") setShowSideBar(true);
   };
 
+  const [showUserProfile, setShowUserProfile] = useState(false); //To show recipient's profile
+
   //To store the reference of the element from where the attachments overlay should be shown
   const overlayRef = useRef<HTMLDivElement>(null);
   const [showOverlay, setShowOverlay] = useState(false); //To toggle attachments overlay visibility
@@ -199,11 +202,85 @@ const ChatArea: React.FC<Props> = ({
 
   return (
     <div className="d-flex flex-column" style={{ height: "100%" }}>
+      {/* recipient profile section */}
+      <Offcanvas
+        className="profile-section"
+        show={showUserProfile}
+        scroll={false}
+        backdrop={false}
+        onHide={() => setShowUserProfile(false)}
+      >
+        <Offcanvas.Header className="justify-content-between profile-section-header">
+          <Offcanvas.Title>
+            {profileUser?.fullname + "'s profile"}
+          </Offcanvas.Title>
+          <div>
+            <IoClose
+              size={30}
+              className="cursor-pointer"
+              onClick={() => setShowUserProfile(false)}
+            />
+          </div>
+        </Offcanvas.Header>
+        <Offcanvas.Body>
+          <Stack gap={1}>
+            <Row className="justify-content-center">
+              <div className="center mb-3">
+                <div className="my-1">
+                  <ProfileImage
+                    src={profileUser?.avatar}
+                    alt="profile-image"
+                    size="150px"
+                  />
+                </div>
+              </div>
+            </Row>
+            <Form.Group controlId="user-fullname">
+              <Form.Label>Fullname</Form.Label>
+              <Form.Control
+                type="input"
+                value={profileUser?.fullname}
+                disabled
+              />
+            </Form.Group>
+            <Form.Group controlId="username">
+              <Form.Label>Username</Form.Label>
+              <Form.Control
+                type="input"
+                value={profileUser?.username}
+                disabled
+              ></Form.Control>
+            </Form.Group>
+            <Form.Group controlId="email">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
+                type="input"
+                value={profileUser?.email}
+                disabled
+              ></Form.Control>
+            </Form.Group>
+          </Stack>
+          <Stack
+            gap={2}
+            direction="horizontal"
+            className="justify-content-end mt-3"
+          >
+            <Button
+              variant="secondary"
+              onClick={() => setShowUserProfile(false)}
+            >
+              Close
+            </Button>
+          </Stack>
+        </Offcanvas.Body>
+      </Offcanvas>
+
       {/* Header Section */}
       <div className="chat-header">
         <div
           className="d-flex align-items-center py-2 px-3"
           style={{ cursor: "default" }}
+          onClick={() => setShowUserProfile((s) => !s)}
         >
           {breakPoint === "mobile" && (
             <div
