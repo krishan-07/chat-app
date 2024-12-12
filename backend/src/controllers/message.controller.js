@@ -183,8 +183,8 @@ const deleteMessage = asyncHandler(async (req, res) => {
     );
 
   if (message.attachments.length > 0) {
-    message.attachments.forEach((attachment) => {
-      const response = removeFromCloudinary(
+    message.attachments.forEach(async (attachment) => {
+      const response = await removeFromCloudinary(
         extractPublicIdFromUrl(attachment.url),
         attachment.type
       );
@@ -212,7 +212,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
       chatId,
       {
         $set: {
-          lastMessage: deletedMessage.content,
+          lastMessage: deletedMessage._id,
         },
       },
       { new: true }
@@ -220,18 +220,29 @@ const deleteMessage = asyncHandler(async (req, res) => {
     if (!chat) throw new ApiError(500, "Internal server Error");
   }
 
+  const structuredMessage = await Message.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(deletedMessage._id),
+      },
+    },
+    ...commonAggregationPipeline(),
+  ]);
+
   chat.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       participant.toString(),
       ChatEventEnum.MESSAGE_DELETE_EVENT,
-      deletedMessage
+      structuredMessage[0]
     );
   });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, deletedMessage, "Message deleted successfully"));
+    .json(
+      new ApiResponse(200, structuredMessage[0], "Message deleted successfully")
+    );
 });
 
 export { getAllMessages, sendMessage, deleteMessage };
