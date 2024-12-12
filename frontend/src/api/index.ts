@@ -44,11 +44,7 @@ const updateAvatar = (file: File) => {
   const formData = new FormData();
   formData.append("avatar", file);
 
-  return apiClient.patch("/users/update-avatar", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  return apiClient.patch("/users/update-avatar", formData);
 };
 
 const updateUserDetails = (fullname: string = "", email: string = "") => {
@@ -98,6 +94,10 @@ const sendMessage = (chatId: string, content: string, attachments: File[]) => {
   return apiClient.post(`/messages/${chatId}`, formData);
 };
 
+const deleteMessage = (chatId: string, messageId: string) => {
+  return apiClient.delete(`/messages/${chatId}/${messageId}`);
+};
+
 export {
   loginUser,
   registerUser,
@@ -112,4 +112,5 @@ export {
   getAllChats,
   getChatMessages,
   sendMessage,
+  deleteMessage,
 };

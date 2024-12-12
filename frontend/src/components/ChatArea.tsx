@@ -36,6 +36,7 @@ import {
 import { PiFileVideo } from "react-icons/pi";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
+import { AiOutlineDelete } from "react-icons/ai";
 
 interface Props {
   chat: ChatInterface;
@@ -50,6 +51,11 @@ interface Props {
   disabled: boolean;
   sending: boolean;
   setAttachedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  hold: boolean;
+  setHold: React.Dispatch<React.SetStateAction<boolean>>;
+  holdedMessages: MessageInterface[];
+  setHoldedMessages: React.Dispatch<React.SetStateAction<MessageInterface[]>>;
+  deleteMessages: () => void;
 }
 
 interface NewMessageInterface extends MessageInterface {
@@ -147,6 +153,11 @@ const ChatArea: React.FC<Props> = ({
   disabled,
   sending,
   setAttachedFiles,
+  hold,
+  setHold,
+  holdedMessages,
+  setHoldedMessages,
+  deleteMessages,
 }) => {
   //import socket hook
   const { user } = useAuth();
@@ -180,6 +191,44 @@ const ChatArea: React.FC<Props> = ({
   }); //To contain the refs for file input elements
   const [files, setFiles] = useState<File[]>([]); //To store the file for making edits
   const [filesArrayType, setFilesArrayType] = useState<string>(); //To store the file array type
+
+  const holdTimer = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseDown = (message: MessageInterface) => {
+    //If message holded state is true ,..update the holded messge on click
+    if (hold) {
+      //check if the holded messages doesn't contains the selected message
+      holdedMessages.every((m) => m._id !== message._id) &&
+      //check if the selected message is sended by the current user
+      message.sender._id === user?._id
+        ? //if yes, update the holded message
+          setHoldedMessages((p) => [...p, message])
+        : //if no, remove the selected message from holded messages
+          setHoldedMessages(holdedMessages.filter((m) => m !== message));
+    } else if (message.sender._id === user?._id) {
+      //enable hold messages
+      holdTimer.current = setTimeout(() => {
+        setHold(true); // Enable the hold state
+        setHoldedMessages([message]);
+      }, 1000); // 1-second hold
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current); // Clear the timer
+      holdTimer.current = null; // Reset the reference
+    }
+    if (!holdedMessages.length) setHold(false);
+  };
+
+  const handleMouseLeave = () => {
+    if (holdTimer.current) {
+      clearTimeout(holdTimer.current); // Clear the timer
+      holdTimer.current = null; // Reset the reference
+    }
+    if (!holdedMessages.length) setHold(false);
+  };
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -277,32 +326,70 @@ const ChatArea: React.FC<Props> = ({
 
       {/* Header Section */}
       <div className="chat-header">
-        <div
-          className="d-flex align-items-center py-2 px-3"
-          style={{ cursor: "default" }}
-          onClick={() => setShowUserProfile((s) => !s)}
-        >
-          {breakPoint === "mobile" && (
+        <div className="d-flex align-items-center justify-content-between py-2 px-3">
+          <div
+            className="d-flex align-items-center"
+            style={{ cursor: "default" }}
+          >
+            {/* back button */}
+            {breakPoint === "mobile" && (
+              <div
+                className="px-2 cursor-pointer back-arrow"
+                onClick={handleOpen}
+              >
+                <IoIosArrowBack size={30} />
+              </div>
+            )}
+            {/* profile card */}
             <div
-              className="px-2 cursor-pointer back-arrow"
-              onClick={handleOpen}
+              className="d-flex align-items-center"
+              onClick={() => setShowUserProfile((s) => !s)}
             >
-              <IoIosArrowBack size={30} />
-            </div>
-          )}
-          <ProfileImage
-            src={chat.isGroupChat ? chat.icon : profileUser?.avatar}
-            alt={chat.isGroupChat ? chat.name : profileUser?.fullname || ""}
-            size="45px"
-          />
-          <div className="ps-2">
-            <div style={{ fontWeight: "500", lineHeight: "1.1" }}>
-              {chat.isGroupChat ? chat.name : profileUser?.fullname}
-            </div>
-            <div className="text-secondary" style={{ fontSize: ".8rem" }}>
-              select for contact info
+              <ProfileImage
+                src={chat.isGroupChat ? chat.icon : profileUser?.avatar}
+                alt={chat.isGroupChat ? chat.name : profileUser?.fullname || ""}
+                size="45px"
+              />
+              <div className="ps-2">
+                <div style={{ fontWeight: "500", lineHeight: "1.1" }}>
+                  {chat.isGroupChat ? chat.name : profileUser?.fullname}
+                </div>
+                <div className="text-secondary" style={{ fontSize: ".8rem" }}>
+                  select for contact info
+                </div>
+              </div>
             </div>
           </div>
+          {/* delete button */}
+          {hold && (
+            <div className="d-flex align-items-center">
+              <div
+                className="position-relative cursor-pointer"
+                onClick={deleteMessages}
+              >
+                <span
+                  style={{
+                    fontSize: ".8rem",
+                  }}
+                  className="position-absolute center center-absolute"
+                >
+                  {holdedMessages.length}
+                </span>
+                <span className="text-danger" style={{ fontSize: ".8rem" }}>
+                  <AiOutlineDelete size={30} />
+                </span>
+              </div>
+              <div
+                className="cursor-pointer"
+                onClick={() => {
+                  setHold(false);
+                  setHoldedMessages([]);
+                }}
+              >
+                <IoClose size={25} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -441,10 +528,13 @@ const ChatArea: React.FC<Props> = ({
                       <Row
                         key={message._id}
                         className={`mb-2 message-container ${
-                          user?._id === message.sender._id
+                          message.sender._id === user!._id
                             ? "sender"
                             : "receiver"
-                        }`}
+                        } ${holdedMessages.includes(message) && "holded"}`}
+                        onMouseDown={() => handleMouseDown(message)}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseLeave}
                       >
                         <Col
                           className={
@@ -574,7 +664,8 @@ const ChatArea: React.FC<Props> = ({
                                 {message.content}
                               </div>
                               <div className="chat-time-stamp d-flex justify-content-end">
-                                {formatDate(message.updatedAt)}
+                                {!message.content.includes("deleted") &&
+                                  formatDate(message.createdAt)}
                               </div>
                             </Card.Body>
                           </Card>

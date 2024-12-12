@@ -20,7 +20,8 @@ const ChatName: React.FC<Props> = ({ chat, isActive, unreadMessages }) => {
   const getAttachmentContent = (chat: string) => {
     if (/\.(docx|pdf|xls|xlsx|pptx|txt|csv)$/i.test(chat))
       return "📁" + chat.split("/").pop()?.split(".").pop();
-    else if (/\.(jpg|jpeg|png|svg)$/i.test(chat)) return "📷 photo";
+    else if (/\.(jpg|jpeg|png|gif|svg|webp|bmp|tiff|heif|heic)$/i.test(chat))
+      return "📷 photo";
     else return "📷 video";
   };
 
@@ -140,7 +141,7 @@ const ChatName: React.FC<Props> = ({ chat, isActive, unreadMessages }) => {
                           className="text-light opacity-70 flex-grow-1 text-truncate "
                           style={{ width: "100px" }}
                         >
-                          {chat.lastMessage?.content}
+                          {content}
                         </div>
                         {!!unreadMessages && (
                           <div

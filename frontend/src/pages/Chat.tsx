@@ -16,6 +16,7 @@ import { IoClose, IoSettingsSharp } from "react-icons/io5";
 import CreateChatModal from "../components/CreateChat/CreateChatModal";
 import { blobUrlToFile, LocalStorage, requestHandler } from "../utils";
 import {
+  deleteMessage,
   getAllChats,
   getChatMessages,
   sendMessage,
@@ -45,7 +46,9 @@ const ChatPage = () => {
   //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
 
-  const [currentUser, setCurrentUser] = useState<UserInterface | null>(user); //To hold the current user
+  const [currentUser, setCurrentUser] = useState<UserInterface | null>(
+    LocalStorage.get("user") || user
+  ); //To hold the current user
 
   const currentChatRef = useRef<ChatInterface | null>(null); //To hold the current chat reference
 
@@ -79,6 +82,10 @@ const ChatPage = () => {
 
   const [isTyping, setIsTyping] = useState(false); // To track if someone is currently typing
   const [selfTyping, setSelfTyping] = useState(false); // To track if the current user is typing
+
+  const [hold, setHold] = useState(false); // Track whether the messages are holded state is active
+  const [holdedMessages, setHoldedMessages] = useState<MessageInterface[]>([]);
+  //To store holded messages
 
   const handleUserProfileClose = () => {
     setShowUserProfile(false); //close the user profile offcanvas
@@ -253,6 +260,36 @@ const ChatPage = () => {
     );
   };
 
+  const deleteChatMessage = async () => {
+    setHold(false);
+    holdedMessages.forEach(
+      async (message) =>
+        await requestHandler(
+          async () => await deleteMessage(message.chat, message._id),
+          undefined,
+          () => {},
+          alert
+        )
+    );
+    setHoldedMessages([]);
+  };
+
+  const updateLastMessageOnDeletion = (
+    chatId: string,
+    message: MessageInterface
+  ) => {
+    const chatToUpdate = chats.find((chat) => chat._id == chatId);
+
+    if (chatToUpdate?.lastMessage?._id === message._id) {
+      chatToUpdate.lastMessage = message;
+      setChats((prev) =>
+        prev.map((chat) =>
+          chat._id === chatToUpdate?._id ? chatToUpdate : chat
+        )
+      );
+    }
+  };
+
   const onConnect = () => {
     setIsConnected(true);
   };
@@ -292,6 +329,21 @@ const ChatPage = () => {
     setIsTyping(false);
   };
 
+  const onMessageDelete = (newMessage: MessageInterface) => {
+    if (newMessage.chat !== currentChatRef.current?._id) {
+      setUnreadMessages((prevUnreadMessages) =>
+        prevUnreadMessages.filter((msg) => msg._id !== newMessage._id)
+      );
+    } else {
+      setMessages((prevMessages) =>
+        prevMessages.map((oldMessage) =>
+          oldMessage._id === newMessage._id ? { ...newMessage } : oldMessage
+        )
+      );
+    }
+    updateLastMessageOnDeletion(newMessage.chat, newMessage);
+  };
+
   useEffect(() => {
     if (!socket) return;
 
@@ -301,6 +353,7 @@ const ChatPage = () => {
     socket.on(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
     socket.on(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
     socket.on(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
+    socket.on(ChatEventEnum.MESSAGE_DELETE_EVENT, onMessageDelete);
 
     return () => {
       socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
@@ -309,6 +362,7 @@ const ChatPage = () => {
       socket.off(ChatEventEnum.MESSAGE_RECEIVED_EVENT, onMessageReceived);
       socket.off(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
       socket.off(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
+      socket.off(ChatEventEnum.MESSAGE_DELETE_EVENT, onMessageDelete);
     };
   }, [chats, socket]);
 
@@ -407,6 +461,10 @@ const ChatPage = () => {
 
                 //toggle show chat side bar when in mobile
                 if (breakPoint === "mobile") setShowChatSideBar(false);
+
+                //reset the message holded state and messages
+                setHold(false);
+                setHoldedMessages([]);
               }}
             >
               <ChatName
@@ -623,6 +681,13 @@ const ChatPage = () => {
               disabled={sending || (!message.trim() && !attachedFiles.length)}
               setShowSideBar={setShowChatSideBar}
               setAttachedFiles={setAttachedFiles}
+              hold={hold}
+              setHold={setHold}
+              holdedMessages={holdedMessages}
+              setHoldedMessages={setHoldedMessages}
+              deleteMessages={() => {
+                deleteChatMessage();
+              }}
             />
           ) : (
             <Container className="h-100">
