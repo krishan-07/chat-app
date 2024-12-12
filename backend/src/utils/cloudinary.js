@@ -35,13 +35,10 @@ const removeFromCloudinary = async (publicId, resourseType = "image") => {
   }
 };
 
-const extractPublicIdFromUrl = (url) => {
-  const parts = url.split("/");
-  const uploadIndex = parts.indexOf("upload");
-  const publicIdWithExtension = parts.slice(uploadIndex + 2)[0];
-  const publicId = publicIdWithExtension.split(".")[0];
+const extractPublicIdFromUrl = (url, type) => {
+  if (type === "raw") return url.split("/").pop();
 
-  return publicId;
+  return url.split("/").pop().split(".")[0];
 };
 
 export { uploadOnCloudinary, removeFromCloudinary, extractPublicIdFromUrl };

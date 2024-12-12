@@ -108,8 +108,6 @@ const sendMessage = asyncHandler(async (req, res) => {
 
       // Push the results into the attachments array
       attachments.push(...uploadedFiles);
-
-      console.log(attachments);
     } catch (error) {
       console.error("Error uploading files:", error);
       throw new ApiError(500, "Failed to upload files");
@@ -185,7 +183,7 @@ const deleteMessage = asyncHandler(async (req, res) => {
   if (message.attachments.length > 0) {
     message.attachments.forEach(async (attachment) => {
       const response = await removeFromCloudinary(
-        extractPublicIdFromUrl(attachment.url),
+        extractPublicIdFromUrl(attachment.url, attachment.type),
         attachment.type
       );
       if (response !== "ok")
