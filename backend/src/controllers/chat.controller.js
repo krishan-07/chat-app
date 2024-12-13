@@ -226,7 +226,6 @@ const createGroupChat = asyncHandler(async (req, res) => {
   ]);
 
   const payload = chat[0];
-  console.log(payload);
   if (!payload) throw new ApiError(500, "Internal server error");
 
   payload.participants.forEach((participant) => {
