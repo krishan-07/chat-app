@@ -10,10 +10,11 @@ import {
   getGroupChatDetails,
   leaveGroupChat,
   removeParticipantFromTheGroup,
-  renameGrouphat,
   searchAvailableUser,
+  updateGroupChat,
 } from "../controllers/chat.controller.js";
 import { mongoIdPathVariableValidator } from "../validators/mongodb.validators.js";
+import { upload } from "../middleware/multer.middleware.js";
 
 const router = Router();
 router.use(verifyJWT);
@@ -31,17 +32,14 @@ router
   .route("/group/:chatId")
   .get(mongoIdPathVariableValidator("chatId"), getGroupChatDetails);
 router
-  .route("/group/rename/:chatId")
-  .patch(mongoIdPathVariableValidator("chatId"), renameGrouphat);
-router
-  .route("/group/add/:particpantId")
+  .route("/group/update/:chatId")
   .patch(
-    mongoIdPathVariableValidator("participantId"),
-    addNewParticipantInTheGroup
+    mongoIdPathVariableValidator("chatId"),
+    upload.single("icon"),
+    updateGroupChat
   );
-router
-  .route("/group/remove/:particpantId")
-  .patch(removeParticipantFromTheGroup);
+router.route("/group/add").patch(addNewParticipantInTheGroup);
+router.route("/group/remove").patch(removeParticipantFromTheGroup);
 router
   .route("/group/leave/:chatId")
   .patch(mongoIdPathVariableValidator("chatId"), leaveGroupChat);

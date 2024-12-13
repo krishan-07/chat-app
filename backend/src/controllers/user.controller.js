@@ -276,12 +276,7 @@ const updateAvatar = asyncHandler(async (req, res) => {
     );
   else {
     if (oldAvatar.avatar !== DefaultProfileUrl) {
-      const response = await removeFromCloudinary(
-        extractPublicIdFromUrl(oldAvatar.avatar)
-      );
-
-      if (response !== "ok")
-        throw new ApiError(400, "Error while removing the old file");
+      await removeFromCloudinary(extractPublicIdFromUrl(oldAvatar.avatar));
     }
   }
 

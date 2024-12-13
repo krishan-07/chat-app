@@ -5,12 +5,18 @@ import { asyncHandler } from "../utils/ayncHandler.js";
 import { User } from "../models/user.model.js";
 import { Chat } from "../models/chat.model.js";
 import { emitSocketEvent } from "../socket/index.js";
-import { ChatEventEnum } from "../constants.js";
+import { ChatEventEnum, DefaultProfileUrl } from "../constants.js";
 import { Message } from "../models/message.model.js";
 import {
   extractPublicIdFromUrl,
   removeFromCloudinary,
+  uploadOnCloudinary,
 } from "../utils/cloudinary.js";
+
+const removeLocalFile = (filePath) => {
+  if (filePath) fs.unlinkSync(filePath);
+  return null;
+};
 
 const commonAggregationPipeline = () => {
   return [
@@ -83,8 +89,13 @@ const deleteCascadeChatMessages = async (chatId) => {
   const response = await Message.deleteMany({
     chat: new mongoose.Types.ObjectId(chatId),
   });
-  if (response.deletedCount !== messages.length - 1) {
-    throw new ApiError(500, "Error while removing the data");
+  if (response.deletedCount !== messages.length) {
+    throw new ApiError(
+      500,
+      `Mismatch in deleted messages count. Expected: ${
+        messages.length - 1
+      }, Deleted: ${response.deletedCount}`
+    );
   }
 
   let attachments = [];
@@ -243,7 +254,7 @@ const createGroupChat = asyncHandler(async (req, res) => {
     .json(new ApiResponse(201, payload, "GroupChat created successfully"));
 });
 
-const renameGrouphat = asyncHandler(async (req, res) => {
+const updateGroupChat = asyncHandler(async (req, res) => {
   const { chatId } = req.params;
   const { name } = req.body;
 
@@ -256,11 +267,30 @@ const renameGrouphat = asyncHandler(async (req, res) => {
   if (chat.admin.toString() !== req.user?.id.toString())
     throw new ApiError(401, "You are not the admin");
 
+  let groupIcon;
+  if (req.file?.path) {
+    groupIcon = await uploadOnCloudinary(req.file?.path);
+    if (!groupIcon?.url) {
+      removeLocalFile(req.file?.path);
+      throw new ApiError(500, "Error while uploading on cloudinary");
+    } else {
+      if (chat.icon !== DefaultProfileUrl) {
+        const response = await removeFromCloudinary(
+          extractPublicIdFromUrl(chat.icon)
+        );
+
+        if (response !== "ok")
+          throw new ApiError(400, "Error while removing the old file");
+      }
+    }
+  }
+
   const updatedChat = await Chat.findByIdAndUpdate(
     chatId,
     {
       $set: {
         name: name || chat.name,
+        icon: groupIcon?.url || chat.icon,
       },
     },
     {
@@ -285,7 +315,7 @@ const renameGrouphat = asyncHandler(async (req, res) => {
     emitSocketEvent(
       req,
       participant.toString(),
-      ChatEventEnum.UPDATE_GROUP_NAME_EVENT,
+      ChatEventEnum.UPDATE_GROUP_EVENT,
       payload
     );
   });
@@ -303,7 +333,7 @@ const addNewParticipantInTheGroup = asyncHandler(async (req, res) => {
     isGroupChat: true,
   });
   if (!chat) throw new ApiError(404, "groupChat does not exists");
-  if (chat.admin.toString() === req.user?._id.toString())
+  if (chat.admin.toString() !== req.user?._id.toString())
     throw new ApiError(401, "You are not the admin of the group");
 
   const existingMembers = chat.participants;
@@ -337,13 +367,22 @@ const addNewParticipantInTheGroup = asyncHandler(async (req, res) => {
 
   emitSocketEvent(req, participantId, ChatEventEnum.NEW_CHAT_EVENT, payload);
 
+  chat.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.PARTICIPANT_JOINED,
+      payload
+    );
+  });
+
   return res
     .status(200)
-    .json(new ApiError(200, payload, "New members added successfully"));
+    .json(new ApiResponse(200, payload, "New members added successfully"));
 });
 
 const removeParticipantFromTheGroup = asyncHandler(async (req, res) => {
-  const { chatId, participantId } = req.params;
+  const { chatId, participantId } = req.body;
 
   const chat = await Chat.findOne({
     _id: new mongoose.Types.ObjectId(chatId),
@@ -351,13 +390,12 @@ const removeParticipantFromTheGroup = asyncHandler(async (req, res) => {
   });
   if (!chat) throw new ApiError(404, "GroupChat doesnot exists");
 
-  if (chat.admin !== req.user?._id)
+  if (chat.admin.toString() !== req.user?._id.toString())
     throw new ApiError(
       401,
       "Cannot perform this action, you are not the admin"
     );
-
-  if (!chat.participants.includes(participantId.toString()))
+  if (!chat.participants.includes(participantId))
     throw new ApiError(404, "No such participants found to be removed");
 
   const updatedChat = await Chat.findByIdAndUpdate(
@@ -385,6 +423,15 @@ const removeParticipantFromTheGroup = asyncHandler(async (req, res) => {
   if (!payload) throw new ApiError(500, "Internal server error");
 
   emitSocketEvent(req, participantId, ChatEventEnum.LEAVE_CHAT_EVENT, payload);
+
+  updatedChat.participants.forEach((participants) => {
+    emitSocketEvent(
+      req,
+      participants.toString(),
+      ChatEventEnum.PARTICIPANT_LEFT,
+      payload
+    );
+  });
 
   return res
     .status(200)
@@ -427,7 +474,21 @@ const leaveGroupChat = asyncHandler(async (req, res) => {
   )[0];
   if (!payload) throw new ApiError(500, "Internal sever error");
 
-  emitSocketEvent(req, req.user?._id, ChatEventEnum.LEAVE_CHAT_EVENT, payload);
+  emitSocketEvent(
+    req,
+    req.user?._id.toString(),
+    ChatEventEnum.LEAVE_CHAT_EVENT,
+    payload
+  );
+
+  updatedChat.participants.forEach((participant) => {
+    emitSocketEvent(
+      req,
+      participant.toString(),
+      ChatEventEnum.PARTICIPANT_LEFT,
+      payload
+    );
+  });
 
   return res
     .status(200)
@@ -437,25 +498,19 @@ const leaveGroupChat = asyncHandler(async (req, res) => {
 const deleteGroupChat = asyncHandler(async (req, res) => {
   const { chatId } = req.params;
 
-  const groupChat = await Chat.aggregate([
-    {
-      $match: {
-        _id: new mongoose.Types.ObjectId(chatId),
-        isGroupChat: true,
-      },
-    },
-    ...commonAggregationPipeline(),
-  ]);
-  if (!groupChat.length) throw new ApiError(404, "GroupChat doesnot exists");
+  const groupChat = await Chat.findOne({
+    _id: new mongoose.Types.ObjectId(chatId),
+    isGroupChat: true,
+  });
+  if (!groupChat) throw new ApiError(404, "GroupChat doesnot exists");
 
-  if (groupChat.admin.toString() !== req.user?._id)
+  if (groupChat.admin.toString() !== req.user?._id.toString())
     throw new ApiError(400, "You are not the admin");
 
   await Chat.findByIdAndDelete(chatId);
   await deleteCascadeChatMessages(chatId);
 
-  deletedGroup.participants.forEach((participant) => {
-    if (participant.toString === req.user?._id.toString()) return;
+  groupChat.participants.forEach((participant) => {
     emitSocketEvent(
       req,
       participant.toString(),
@@ -535,7 +590,7 @@ export {
   createOrGetSingleChat,
   deleteSingleChat,
   createGroupChat,
-  renameGrouphat,
+  updateGroupChat,
   addNewParticipantInTheGroup,
   removeParticipantFromTheGroup,
   leaveGroupChat,
