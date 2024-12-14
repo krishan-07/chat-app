@@ -17,6 +17,7 @@ import CreateChatModal from "../components/CreateChat/CreateChatModal";
 import { blobUrlToFile, LocalStorage, requestHandler } from "../utils";
 import {
   addParticipant,
+  deleteChat,
   deleteGroup,
   deleteMessage,
   getAllChats,
@@ -367,6 +368,17 @@ const ChatPage = () => {
     );
   };
 
+  const deleteSingleChat = async (chatId: string) => {
+    await requestHandler(
+      async () => await deleteChat(chatId),
+      undefined,
+      () => {
+        if (breakPoint === "mobile") setShowChatSideBar(true);
+      },
+      alert
+    );
+  };
+
   const onConnect = () => {
     setIsConnected(true);
   };
@@ -380,7 +392,10 @@ const ChatPage = () => {
   };
 
   const onLeaveChat = (chat: ChatInterface) => {
-    if (chat._id === currentChatRef.current?._id) currentChatRef.current = null;
+    if (chat._id === currentChatRef.current?._id) {
+      currentChatRef.current = null;
+      LocalStorage.remove("current-chat");
+    }
     setChats((prev) => prev.filter((p) => p._id !== chat._id));
   };
 
@@ -427,17 +442,26 @@ const ChatPage = () => {
   };
 
   const onParticipantLeft = (chat: ChatInterface) => {
-    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    if (chat._id === currentChatRef.current?._id) {
+      currentChatRef.current = chat;
+      LocalStorage.set("current-chat", chat);
+    }
     setChats((prev) => prev.map((p) => (chat._id === p._id ? { ...chat } : p)));
   };
 
   const onParticipantJoinded = (chat: ChatInterface) => {
-    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    if (chat._id === currentChatRef.current?._id) {
+      currentChatRef.current = chat;
+      LocalStorage.set("current-chat", chat);
+    }
     setChats((prev) => prev.map((p) => (chat._id === p._id ? { ...chat } : p)));
   };
 
   const onGroupUpdateEvent = (chat: ChatInterface) => {
-    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    if (chat._id === currentChatRef.current?._id) {
+      currentChatRef.current = chat;
+      LocalStorage.set("current-chat", chat);
+    }
     setChats((prev) => prev.map((p) => (p._id === chat._id ? { ...chat } : p)));
   };
 
@@ -804,6 +828,7 @@ const ChatPage = () => {
               updateGroup={(chatId: string, name: string, icon: string) =>
                 updateGroupChat(chatId, name, icon)
               }
+              deleteSingleChat={(chatId: string) => deleteSingleChat(chatId)}
             />
           ) : (
             <Container className="h-100">
@@ -824,7 +849,10 @@ const ChatPage = () => {
                   <div className="center mt-3">
                     <Button
                       variant="outline-primary"
-                      onClick={() => setshowCreateChat(true)}
+                      onClick={() => {
+                        setshowCreateChat(true);
+                        if (breakPoint === "mobile") setShowChatSideBar(true);
+                      }}
                     >
                       + NEW CHAT
                     </Button>

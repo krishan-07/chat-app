@@ -71,6 +71,7 @@ interface Props {
   leaveChat: (chatId: string) => Promise<void>;
   deleteGroupChat: (chatId: string) => Promise<void>;
   updateGroup: (chatId: string, name: string, icon: string) => Promise<void>;
+  deleteSingleChat: (chatId: string) => Promise<void>;
 }
 
 interface UserOption {
@@ -184,6 +185,7 @@ const ChatArea: React.FC<Props> = ({
   leaveChat,
   deleteGroupChat,
   updateGroup,
+  deleteSingleChat,
 }) => {
   //import socket hook
   const { user } = useAuth();
@@ -251,10 +253,7 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  const handleStart = (
-    event: React.TouchEvent | React.MouseEvent,
-    message: MessageInterface
-  ) => {
+  const handleStart = (message: MessageInterface) => {
     // If message hold state is active, update the holded message on touch/mouse start
     if (hold) {
       // Check if the holded messages don't contain the selected message
@@ -286,8 +285,8 @@ const ChatArea: React.FC<Props> = ({
 
   // Bind both mouse and touch events
   const bindInteractionEvents = (message: MessageInterface) => ({
-    onMouseDown: (e: React.MouseEvent) => handleStart(e, message),
-    onTouchStart: (e: React.TouchEvent) => handleStart(e, message),
+    onMouseDown: () => handleStart(message),
+    onTouchStart: () => handleStart(message),
     onMouseUp: handleEnd,
     onTouchEnd: handleEnd,
     onMouseLeave: handleEnd, // Fallback for mouse leaving the element
@@ -580,8 +579,8 @@ const ChatArea: React.FC<Props> = ({
               />
             </div>
           </Offcanvas.Header>
-          <Offcanvas.Body>
-            <Stack gap={1}>
+          <Offcanvas.Body className="d-flex flex-column">
+            <Stack gap={1} className="flex-grow-1">
               <Row className="justify-content-center">
                 <div className="center mb-3">
                   <div className="my-1">
@@ -621,13 +620,19 @@ const ChatArea: React.FC<Props> = ({
             <Stack
               gap={2}
               direction="horizontal"
-              className="justify-content-end mt-3"
+              className="justify-content-end mb-1"
             >
               <Button
                 variant="secondary"
                 onClick={() => setShowChatDetails(false)}
               >
                 Close
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => deleteSingleChat(chat._id)}
+              >
+                Leave
               </Button>
             </Stack>
           </Offcanvas.Body>

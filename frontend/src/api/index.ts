@@ -130,6 +130,11 @@ const updateGroup = (chatId: string, name: string, icon: File) => {
   }
   return apiClient.patch(`/chats/group/update/${chatId}`, formData);
 };
+
+const deleteChat = (chatId: string) => {
+  return apiClient.delete(`/chats/c/delete/${chatId}`);
+};
+
 export {
   loginUser,
   registerUser,
@@ -150,4 +155,5 @@ export {
   leaveGroup,
   deleteGroup,
   updateGroup,
+  deleteChat,
 };
