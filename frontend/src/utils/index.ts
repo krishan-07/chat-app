@@ -157,3 +157,26 @@ export const formatDate = (
     return formatDateOnly(inputDate); // Show date if it's older than yesterday
   }
 };
+
+export const formatParticipants = (
+  participants: string[],
+  maxLength: number
+) => {
+  let result = "";
+  for (let i = 0; i < participants.length; i++) {
+    // Add the next participant
+    let tempResult = result + (result ? ", " : "") + participants[i];
+
+    // Check if adding this participant exceeds the maxLength
+    if (tempResult.length > maxLength) {
+      // Append "+X more" and break
+      let remaining = participants.length - i;
+      result += `, ...${remaining} more`;
+      break;
+    }
+
+    // Update the result
+    result = tempResult;
+  }
+  return result;
+};

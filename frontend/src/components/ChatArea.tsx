@@ -22,7 +22,7 @@ import {
   MdOutlineFileDownload,
 } from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
-import { formatDate, requestHandler } from "../utils";
+import { formatDate, formatParticipants, requestHandler } from "../utils";
 import { MessageInterface } from "../interface/message";
 import useBreakpoint from "../hooks/useBreakpoint";
 import { IoIosArrowBack } from "react-icons/io";
@@ -251,28 +251,32 @@ const ChatArea: React.FC<Props> = ({
     }
   };
 
-  //To handle hold message functionality
-  const handleMouseDown = (message: MessageInterface) => {
-    //If message holded state is true ,..update the holded messge on click
+  const handleStart = (
+    event: React.TouchEvent | React.MouseEvent,
+    message: MessageInterface
+  ) => {
+    // If message hold state is active, update the holded message on touch/mouse start
     if (hold) {
-      //check if the holded messages doesn't contains the selected message
+      // Check if the holded messages don't contain the selected message
       holdedMessages.every((m) => m._id !== message._id) &&
-      //check if the selected message is sended by the current user
+      // Check if the selected message is sent by the current user
       message.sender._id === user?._id
-        ? //if yes, update the holded message
-          setHoldedMessages((p) => [...p, message])
-        : //if no, remove the selected message from holded messages
-          setHoldedMessages(holdedMessages.filter((m) => m !== message));
+        ? // If yes, add the selected message to the holded messages
+          setHoldedMessages((prev) => [...prev, message])
+        : // If no, remove the selected message from the holded messages
+          setHoldedMessages(
+            holdedMessages.filter((m) => m._id !== message._id)
+          );
     } else if (message.sender._id === user?._id) {
-      //enable hold messages
+      // Enable hold messages
       holdTimer.current = setTimeout(() => {
         setHold(true); // Enable the hold state
-        setHoldedMessages([message]);
+        setHoldedMessages([message]); // Set the current message as the holded message
       }, 1000); // 1-second hold
     }
   };
 
-  const handleMouseUp = () => {
+  const handleEnd = () => {
     if (holdTimer.current) {
       clearTimeout(holdTimer.current); // Clear the timer
       holdTimer.current = null; // Reset the reference
@@ -280,13 +284,15 @@ const ChatArea: React.FC<Props> = ({
     if (!holdedMessages.length) setHold(false);
   };
 
-  const handleMouseLeave = () => {
-    if (holdTimer.current) {
-      clearTimeout(holdTimer.current); // Clear the timer
-      holdTimer.current = null; // Reset the reference
-    }
-    if (!holdedMessages.length) setHold(false);
-  };
+  // Bind both mouse and touch events
+  const bindInteractionEvents = (message: MessageInterface) => ({
+    onMouseDown: (e: React.MouseEvent) => handleStart(e, message),
+    onTouchStart: (e: React.TouchEvent) => handleStart(e, message),
+    onMouseUp: handleEnd,
+    onTouchEnd: handleEnd,
+    onMouseLeave: handleEnd, // Fallback for mouse leaving the element
+    onTouchCancel: handleEnd, // Handle touch interruptions
+  });
 
   //To handle attachments change
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -659,7 +665,22 @@ const ChatArea: React.FC<Props> = ({
                   {chat.isGroupChat ? chat.name : profileUser?.fullname}
                 </div>
                 <div className="text-secondary" style={{ fontSize: ".8rem" }}>
-                  select for contact info
+                  {chat.isGroupChat ? (
+                    <div className="">
+                      {formatParticipants(
+                        chat.participants.map(
+                          (participant) => participant.fullname
+                        ),
+                        breakPoint === "mobile"
+                          ? 20
+                          : breakPoint === "tablet"
+                          ? 50
+                          : 100
+                      )}
+                    </div>
+                  ) : (
+                    <>select for contact info</>
+                  )}
                 </div>
               </div>
             </div>
@@ -836,9 +857,7 @@ const ChatArea: React.FC<Props> = ({
                             ? "sender"
                             : "receiver"
                         } ${holdedMessages.includes(message) && "holded"}`}
-                        onMouseDown={() => handleMouseDown(message)}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseLeave}
+                        {...bindInteractionEvents(message)}
                       >
                         <Col
                           className={
