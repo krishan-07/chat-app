@@ -45,11 +45,13 @@ import ImageCropModal from "../components/CropImage/ImageCropModal";
 import { UserInterface } from "../interface/user";
 import { IoIosArrowBack } from "react-icons/io";
 import { useErrorContext } from "../context/ErrorContext";
+import { useAlertContext } from "../context/AlertContext";
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
   const { addError } = useErrorContext();
+  const { showAlert } = useAlertContext();
 
   //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
@@ -128,7 +130,8 @@ const ChatPage = () => {
   const updateUserData = async () => {
     setIsUserProfileUpdating(true);
     //if only avatar is updated send api req to update avatar
-    if (imgSrc)
+    if (imgSrc) {
+      showAlert("Updating profile image...");
       await requestHandler(
         async () => await updateAvatar(await blobUrlToFile(imgSrc)),
         undefined,
@@ -138,8 +141,12 @@ const ChatPage = () => {
         },
         addError
       );
+      showAlert("Profile image updated.", "success", 300);
+    }
     //if only fullname is updated send api req to update userDetails
-    if (userFullname !== currentUser?.fullname)
+    if (userFullname !== currentUser?.fullname) {
+      showAlert("Updating profile name...");
+
       await requestHandler(
         async () => await updateUserDetails(userFullname, ""),
         undefined,
@@ -150,9 +157,11 @@ const ChatPage = () => {
         addError
       );
 
+      showAlert("Profile name updated.", "success", 300);
+    }
+
     setIsUserProfileUpdating(false);
     setImgSrc("");
-    setShowUserProfile(false);
   };
 
   const getChats = async () => {
@@ -306,6 +315,7 @@ const ChatPage = () => {
       (res) => {
         const { data } = res;
         currentChatRef.current = data;
+        LocalStorage.set("current-chat", data);
         setChats((prev) =>
           prev.map((p) => (p._id === data._id ? { ...data } : p))
         );
@@ -322,6 +332,7 @@ const ChatPage = () => {
       (res) => {
         const { data } = res;
         currentChatRef.current = data;
+        LocalStorage.set("current-chat", data);
         setChats((prev) =>
           prev.map((p) => (p._id === data._id ? { ...data } : p))
         );
@@ -355,19 +366,22 @@ const ChatPage = () => {
   ) => {
     let icon: File;
     if (groupIcon.trim()) icon = await blobUrlToFile(groupIcon);
-
+    showAlert("updating group chat...");
     await requestHandler(
       async () => await updateGroup(chatId, groupName, icon),
       undefined,
       (res) => {
-        if (res.data._id === currentChatRef.current?._id)
+        if (res.data._id === currentChatRef.current?._id) {
           currentChatRef.current = res.data;
+          LocalStorage.set("current-chat", res.data);
+        }
         setChats((prev) =>
           prev.map((p) => (p._id === res.data._id ? { ...res.data } : p))
         );
       },
       addError
     );
+    showAlert("group chat updated successfully.", "success", 3000);
   };
 
   const deleteSingleChat = async (chatId: string) => {

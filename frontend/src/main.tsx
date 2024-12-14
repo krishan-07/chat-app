@@ -8,6 +8,7 @@ import { SocketProvider } from "./context/SocketContext.tsx";
 import ConnectivityAlert from "./components/ConectivityAlert.tsx";
 import { ErrorProvider } from "./context/ErrorContext.tsx";
 import GlobalErrorAlert from "./components/GlobalErrorAlert.tsx";
+import { AlertProvider } from "./context/AlertContext.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -15,9 +16,11 @@ createRoot(document.getElementById("root")!).render(
       <BrowserRouter>
         <AuthProvider>
           <SocketProvider>
-            <ConnectivityAlert />
-            <GlobalErrorAlert />
-            <App />
+            <AlertProvider>
+              <ConnectivityAlert />
+              <GlobalErrorAlert />
+              <App />
+            </AlertProvider>
           </SocketProvider>
         </AuthProvider>
       </BrowserRouter>
