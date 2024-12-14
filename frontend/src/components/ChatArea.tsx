@@ -47,6 +47,7 @@ import Select from "react-select";
 import { CustomOption, customStyles } from "./CreateChat/CustomOption";
 import { MultiValue, SingleValue } from "react-select";
 import { getAvailableUsers } from "../api";
+import { useErrorContext } from "../context/ErrorContext";
 
 interface Props {
   chat: ChatInterface;
@@ -189,6 +190,7 @@ const ChatArea: React.FC<Props> = ({
 }) => {
   //import socket hook
   const { user } = useAuth();
+  const { addError } = useErrorContext();
 
   //To show chat side bar while in mobile
   const breakPoint = useBreakpoint();
@@ -322,7 +324,7 @@ const ChatArea: React.FC<Props> = ({
           );
         }
       },
-      alert
+      addError
     );
   };
 

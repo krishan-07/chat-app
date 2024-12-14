@@ -4,6 +4,7 @@ import { LocalStorage, requestHandler } from "../utils";
 import { getCurrentUser, loginUser, logoutUser, registerUser } from "../api";
 import { useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
+import { useErrorContext } from "./ErrorContext";
 
 const AuthContext = createContext<{
   user: UserInterface | null;
@@ -33,10 +34,11 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
+  const { addError } = useErrorContext();
+
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-
   const navigate = useNavigate();
 
   const login = async (data: { field: string; password: string }) => {
@@ -51,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         LocalStorage.set("token", data.accessToken);
         navigate("/chat");
       },
-      alert
+      addError
     );
   };
 
@@ -72,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         LocalStorage.set("token", data.accessToken);
         navigate("/register-redirect");
       },
-      alert
+      addError
     );
   };
 
@@ -86,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         LocalStorage.clear();
         navigate("/login");
       },
-      alert
+      addError
     );
   };
 
@@ -102,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         LocalStorage.set("token", accessToken);
         navigate("/chat");
       },
-      alert
+      addError
     );
   };
 

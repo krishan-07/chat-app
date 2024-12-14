@@ -37,7 +37,7 @@ export const requestHandler = async (
   api: () => Promise<AxiosResponse<ApiInterface, any>>,
   setLoading: (loading: boolean) => void = () => {},
   onSuccess: (data: ApiInterface) => void,
-  onError: (error: any) => void
+  addError: (error: string) => void
 ) => {
   setLoading && setLoading(true);
   try {
@@ -53,7 +53,7 @@ export const requestHandler = async (
       LocalStorage.clear();
       if (isBrowser) window.location.href = "/login"; //redirect to login Page
     }
-    onError(extractErrorMessageFromHTMLDoc(error?.response?.data));
+    addError(extractErrorMessageFromHTMLDoc(error?.response?.data));
   } finally {
     setLoading && setLoading(false);
   }

@@ -12,6 +12,7 @@ import {
   createGroupChat as groupChat,
 } from "../../api";
 import { ChatInterface } from "../../interface/chat";
+import { useErrorContext } from "../../context/ErrorContext";
 
 interface Props {
   show: boolean;
@@ -26,6 +27,8 @@ interface UserOption {
 }
 
 const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
+  const { addError } = useErrorContext();
+
   const [selectedUsers, setSelectedUsers] = useState<UserOption[] | null>(null);
   const [isGroupChat, setIsGroupChat] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -70,7 +73,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
         onSucess(data);
         handleClose(); // Close the modal or popup
       },
-      alert
+      addError
     );
   };
 
@@ -88,7 +91,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
           setOptions(data);
         }
       },
-      alert
+      addError
     );
   };
 
@@ -118,7 +121,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
         onSucess(data);
         handleClose();
       },
-      alert
+      addError
     );
   };
 

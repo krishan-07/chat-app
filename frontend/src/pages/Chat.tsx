@@ -44,10 +44,12 @@ import { Crop } from "react-image-crop";
 import ImageCropModal from "../components/CropImage/ImageCropModal";
 import { UserInterface } from "../interface/user";
 import { IoIosArrowBack } from "react-icons/io";
+import { useErrorContext } from "../context/ErrorContext";
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
+  const { addError } = useErrorContext();
 
   //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
@@ -108,7 +110,7 @@ const ChatPage = () => {
     if (file) {
       setCrop(undefined);
       if (!file.type.startsWith("image/")) {
-        alert("Only image files are allowed!");
+        addError("Only image files are allowed!");
         return;
       }
       const reader = new FileReader();
@@ -134,7 +136,7 @@ const ChatPage = () => {
           setCurrentUser(res.data);
           LocalStorage.set("user", res.data);
         },
-        alert
+        addError
       );
     //if only fullname is updated send api req to update userDetails
     if (userFullname !== currentUser?.fullname)
@@ -145,7 +147,7 @@ const ChatPage = () => {
           setCurrentUser(res.data);
           LocalStorage.set("user", res.data);
         },
-        alert
+        addError
       );
 
     setIsUserProfileUpdating(false);
@@ -164,15 +166,15 @@ const ChatPage = () => {
 
         setChats(data || []);
       },
-      alert
+      addError
     );
 
     return response;
   };
 
   const getMessages = async () => {
-    // Check if socket is available, if not, show an alert
-    if (!socket) return alert("Socket not available");
+    // Check if socket is available, if not, show an addError
+    if (!socket) return addError("Socket not available");
 
     if (currentChatRef.current)
       // Emit an event to join the current chat
@@ -190,7 +192,7 @@ const ChatPage = () => {
         setMessages(data || []);
       },
       // Display any error alerts if they occur during the fetch
-      alert
+      addError
     );
   };
 
@@ -262,7 +264,7 @@ const ChatPage = () => {
         setMessages((prev) => [res.data, ...prev]); // Update messages in the UI
         updateChatLastMessage(currentChatRef.current?._id || "", res.data);
       },
-      alert
+      addError
     );
   };
 
@@ -274,7 +276,7 @@ const ChatPage = () => {
           async () => await deleteMessage(message.chat, message._id),
           undefined,
           () => {},
-          alert
+          addError
         )
     );
     setHoldedMessages([]);
@@ -308,7 +310,7 @@ const ChatPage = () => {
           prev.map((p) => (p._id === data._id ? { ...data } : p))
         );
       },
-      alert
+      addError
     );
   };
 
@@ -324,7 +326,7 @@ const ChatPage = () => {
           prev.map((p) => (p._id === data._id ? { ...data } : p))
         );
       },
-      alert
+      addError
     );
   };
 
@@ -333,7 +335,7 @@ const ChatPage = () => {
       async () => await leaveGroup(chatId),
       undefined,
       () => {},
-      alert
+      addError
     );
   };
 
@@ -342,7 +344,7 @@ const ChatPage = () => {
       async () => await deleteGroup(chatId),
       undefined,
       () => {},
-      alert
+      addError
     );
   };
 
@@ -364,7 +366,7 @@ const ChatPage = () => {
           prev.map((p) => (p._id === res.data._id ? { ...res.data } : p))
         );
       },
-      alert
+      addError
     );
   };
 
@@ -375,7 +377,7 @@ const ChatPage = () => {
       () => {
         if (breakPoint === "mobile") setShowChatSideBar(true);
       },
-      alert
+      addError
     );
   };
 
