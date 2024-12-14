@@ -43,7 +43,9 @@ body {
 .cursor-pointer {
   cursor: pointer;
 }
-
+.cursor-default {
+  cursor: default;
+}
 .d-hidden {
   opacity: 0;
 }

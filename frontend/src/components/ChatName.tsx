@@ -91,7 +91,7 @@ const ChatName: React.FC<Props> = ({ chat, isActive, unreadMessages }) => {
                         </>
                       ) : (
                         <>
-                          <div className="text-primary me-1 opacity-50">
+                          <div className="text-primary me-1 opacity-50 text-nowrap">
                             {chat?.lastMessage?.sender?.fullname}
                           </div>
                           <div

@@ -14,6 +14,10 @@ interface ServerToClientEvents {
   [ChatEventEnum.TYPING_EVENT]: (chatId: string) => void;
   [ChatEventEnum.STOP_TYPING_EVENT]: (chatId: string) => void;
   [ChatEventEnum.MESSAGE_DELETE_EVENT]: (message: MessageInterface) => void;
+  [ChatEventEnum.LEAVE_CHAT_EVENT]: (chat: ChatInterface) => void;
+  [ChatEventEnum.PARTICIPANT_JOINED]: (chat: ChatInterface) => void;
+  [ChatEventEnum.PARTICIPANT_LEFT]: (chat: ChatInterface) => void;
+  [ChatEventEnum.UPDATE_GROUP_EVENT]: (chat: ChatInterface) => void;
 }
 
 interface ClientToServerEvents {

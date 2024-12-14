@@ -98,6 +98,38 @@ const deleteMessage = (chatId: string, messageId: string) => {
   return apiClient.delete(`/messages/${chatId}/${messageId}`);
 };
 
+const addParticipant = (chatId: string, participantId: string) => {
+  return apiClient.patch("/chats/group/add", {
+    participantId,
+    chatId,
+  });
+};
+
+const removeParticipant = (chatId: string, participantId: string) => {
+  return apiClient.patch("/chats/group/remove", {
+    participantId,
+    chatId,
+  });
+};
+
+const leaveGroup = (chatId: string) => {
+  return apiClient.patch(`/chats/group/leave/${chatId}`);
+};
+
+const deleteGroup = (chatId: string) => {
+  return apiClient.delete(`/chats/group/delete/${chatId}`);
+};
+
+const updateGroup = (chatId: string, name: string, icon: File) => {
+  const formData = new FormData();
+  if (name) {
+    formData.append("name", name);
+  }
+  if (icon) {
+    formData.append("icon", icon);
+  }
+  return apiClient.patch(`/chats/group/update/${chatId}`, formData);
+};
 export {
   loginUser,
   registerUser,
@@ -113,4 +145,9 @@ export {
   getChatMessages,
   sendMessage,
   deleteMessage,
+  addParticipant,
+  removeParticipant,
+  leaveGroup,
+  deleteGroup,
+  updateGroup,
 };

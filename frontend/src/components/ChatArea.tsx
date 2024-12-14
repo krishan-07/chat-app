@@ -16,9 +16,13 @@ import { ChatInterface } from "../interface/chat";
 import ProfileImage from "./ProfileImage";
 import React, { useEffect, useRef, useState } from "react";
 import { IoClose, IoSendOutline } from "react-icons/io5";
-import { MdOutlineEmojiEmotions, MdOutlineFileDownload } from "react-icons/md";
+import {
+  MdModeEditOutline,
+  MdOutlineEmojiEmotions,
+  MdOutlineFileDownload,
+} from "react-icons/md";
 import { ImAttachment } from "react-icons/im";
-import { formatDate } from "../utils";
+import { formatDate, requestHandler } from "../utils";
 import { MessageInterface } from "../interface/message";
 import useBreakpoint from "../hooks/useBreakpoint";
 import { IoIosArrowBack } from "react-icons/io";
@@ -37,6 +41,12 @@ import { PiFileVideo } from "react-icons/pi";
 import Picker from "@emoji-mart/react";
 import data from "@emoji-mart/data";
 import { AiOutlineDelete } from "react-icons/ai";
+import { Crop } from "react-image-crop";
+import ImageCropModal from "./CropImage/ImageCropModal";
+import Select from "react-select";
+import { CustomOption, customStyles } from "./CreateChat/CustomOption";
+import { MultiValue, SingleValue } from "react-select";
+import { getAvailableUsers } from "../api";
 
 interface Props {
   chat: ChatInterface;
@@ -56,6 +66,17 @@ interface Props {
   holdedMessages: MessageInterface[];
   setHoldedMessages: React.Dispatch<React.SetStateAction<MessageInterface[]>>;
   deleteMessages: () => void;
+  addParticipant: (participantId: string) => Promise<void>;
+  removeParticipant: (participantId: string) => Promise<void>;
+  leaveChat: (chatId: string) => Promise<void>;
+  deleteGroupChat: (chatId: string) => Promise<void>;
+  updateGroup: (chatId: string, name: string, icon: string) => Promise<void>;
+}
+
+interface UserOption {
+  value: string; // Corresponds to `user._id`
+  label: string; // Corresponds to `user.username`
+  avatar: string; // URL for the user's avatar
 }
 
 interface NewMessageInterface extends MessageInterface {
@@ -158,17 +179,14 @@ const ChatArea: React.FC<Props> = ({
   holdedMessages,
   setHoldedMessages,
   deleteMessages,
+  addParticipant,
+  removeParticipant,
+  leaveChat,
+  deleteGroupChat,
+  updateGroup,
 }) => {
   //import socket hook
   const { user } = useAuth();
-
-  //get receiver chat user profile info
-  const profileUser = chat.participants.find(
-    (participant) => participant._id !== user?._id
-  );
-
-  //To handle auto scroll
-  const bottomRef = useRef<HTMLDivElement | null>(null);
 
   //To show chat side bar while in mobile
   const breakPoint = useBreakpoint();
@@ -176,13 +194,27 @@ const ChatArea: React.FC<Props> = ({
     if (breakPoint === "mobile") setShowSideBar(true);
   };
 
-  const [showUserProfile, setShowUserProfile] = useState(false); //To show recipient's profile
+  const profileUser = chat.participants.find(
+    (participant) => participant._id !== user?._id
+  ); //get receiver chat user profile info
 
   //To store the reference of the element from where the attachments overlay should be shown
   const overlayRef = useRef<HTMLDivElement>(null);
-  const [showOverlay, setShowOverlay] = useState(false); //To toggle attachments overlay visibility
+  const fileInputRef = useRef<HTMLInputElement>(null); //To hold input ref for changing user avatar
+  const bottomRef = useRef<HTMLDivElement | null>(null); //To handle auto scroll
+  const holdTimer = useRef<NodeJS.Timeout | null>(null); //To store the hold timer
 
+  const [imgSrc, setImgSrc] = useState(""); //To hold the uploaded avatar
+  const [crop, setCrop] = useState<Crop>(); //To hold cropped uploaded avatar
+  const [showImageCropper, setShowImageCropper] = useState(false); //To control the image cropper modal
+  const [groupName, setGroupName] = useState(""); //To set group name
+
+  const [showChatDetails, setShowChatDetails] = useState(false); //To toggle chat details
+  const [showOverlay, setShowOverlay] = useState(false); //To toggle attachments overlay visibility
   const [showEmoji, setShowEmoji] = useState(false); //To toggle emoji picker visibility
+  const [showAddParicipant, setShowAddPartipant] = useState(false);
+  const [newParticipant, setNewParticipant] = useState<UserOption | null>(null);
+  const [options, setOptions] = useState<UserOption[]>([]);
 
   const fileRefs = useRef<{ [key: string]: HTMLInputElement | null }>({
     docs: null,
@@ -192,8 +224,34 @@ const ChatArea: React.FC<Props> = ({
   const [files, setFiles] = useState<File[]>([]); //To store the file for making edits
   const [filesArrayType, setFilesArrayType] = useState<string>(); //To store the file array type
 
-  const holdTimer = useRef<NodeJS.Timeout | null>(null);
+  const handleChatDetailsClose = () => {
+    setShowChatDetails(false);
+    setShowAddPartipant(false);
+    setImgSrc("");
+  };
 
+  //To handle the avatar updation
+  const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setCrop(undefined);
+      if (!file.type.startsWith("image/")) {
+        alert("Only image files are allowed!");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => setImgSrc(reader.result?.toString() || "");
+      reader.readAsDataURL(file);
+
+      setShowImageCropper(true);
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  //To handle hold message functionality
   const handleMouseDown = (message: MessageInterface) => {
     //If message holded state is true ,..update the holded messge on click
     if (hold) {
@@ -230,6 +288,7 @@ const ChatArea: React.FC<Props> = ({
     if (!holdedMessages.length) setHold(false);
   };
 
+  //To handle attachments change
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const fileArray = Array.from(e.target.files); // Convert FileList to an array
@@ -237,6 +296,29 @@ const ChatArea: React.FC<Props> = ({
       setFilesArrayType(fileArray[0].type); //update the type of file array
       setAttachedFiles(fileArray); //update main attachments
     }
+  };
+
+  const fetchUsers = async () => {
+    await requestHandler(
+      async () => await getAvailableUsers(),
+      undefined,
+      (res) => {
+        if (res.data.length) {
+          const data: UserOption[] = res.data.map((user: UserInterface) => ({
+            value: user._id,
+            label: user.username,
+            avatar: user.avatar,
+          }));
+
+          setOptions(
+            data.filter((d) =>
+              chat.participants.every((par) => par._id !== d.value)
+            )
+          );
+        }
+      },
+      alert
+    );
   };
 
   useEffect(() => {
@@ -249,80 +331,302 @@ const ChatArea: React.FC<Props> = ({
     setShowOverlay(false);
   }, [breakPoint]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [showAddParicipant]);
+
+  useEffect(() => {
+    fetchUsers();
+    setGroupName(chat.name);
+  }, [chat]);
+
   return (
     <div className="d-flex flex-column" style={{ height: "100%" }}>
-      {/* recipient profile section */}
-      <Offcanvas
-        className="profile-section"
-        show={showUserProfile}
-        scroll={false}
-        backdrop={false}
-        onHide={() => setShowUserProfile(false)}
-      >
-        <Offcanvas.Header className="justify-content-between profile-section-header">
-          <Offcanvas.Title>
-            {profileUser?.fullname + "'s profile"}
-          </Offcanvas.Title>
-          <div>
-            <IoClose
-              size={30}
-              className="cursor-pointer"
-              onClick={() => setShowUserProfile(false)}
-            />
-          </div>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
-          <Stack gap={1}>
-            <Row className="justify-content-center">
-              <div className="center mb-3">
-                <div className="my-1">
-                  <ProfileImage
-                    src={profileUser?.avatar}
-                    alt="profile-image"
-                    size="150px"
+      {/* chat details section */}
+      {chat.isGroupChat ? (
+        //group details
+        <Offcanvas
+          className="profile-section"
+          show={showChatDetails}
+          backdrop={false}
+          scroll={true}
+          onHide={handleChatDetailsClose}
+        >
+          <Offcanvas.Header className="justify-content-between profile-section-header">
+            <Offcanvas.Title>Group details</Offcanvas.Title>
+            <div>
+              <IoClose
+                size={30}
+                className="cursor-pointer"
+                onClick={handleChatDetailsClose}
+              />
+            </div>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            <div className="d-flex flex-column gap-1 h-100">
+              <Row className="justify-content-center">
+                <div className="center mb-3">
+                  <div className="my-1">
+                    <ProfileImage
+                      src={imgSrc ? imgSrc : chat?.icon}
+                      alt="profile-image"
+                      size="120px"
+                    />
+                  </div>
+                  {chat.admin === user?._id && (
+                    <div className="align-self-end">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        id="file"
+                        accept="image/*"
+                        className="d-none"
+                        onChange={handleIconChange}
+                      />
+                      <label
+                        htmlFor="file"
+                        style={{
+                          bottom: "10px",
+                          right: "10px",
+                          position: "relative",
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <MdModeEditOutline size={27} />
+                        <ImageCropModal
+                          show={showImageCropper}
+                          handleClose={() => setShowImageCropper(false)}
+                          imgSrc={imgSrc}
+                          setImgSrc={setImgSrc}
+                          crop={crop}
+                          setCrop={setCrop}
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </Row>
+              <div
+                className="flex-grow-1 d-flex flex-column"
+                style={{ overflowY: "auto" }}
+              >
+                <Form.Group controlId="user-fullname">
+                  <Form.Label style={{ fontWeight: "500" }}>Name</Form.Label>
+                  <Form.Control
+                    type="input"
+                    value={groupName}
+                    disabled={chat.admin !== user?._id}
+                    onChange={(e) => setGroupName(e.target.value)}
+                    size="sm"
                   />
+                </Form.Group>
+                <div
+                  className="flex-grow-1 d-flex flex-column mt-2"
+                  style={{ overflowY: "auto" }}
+                >
+                  <div
+                    className="mb-1 py-1 d-flex justify-content-between align-items-center"
+                    style={{ fontWeight: "500" }}
+                  >
+                    <div>Participants</div>
+                    {chat.admin === user?._id && (
+                      <div
+                        className="cursor-pointer"
+                        onClick={() => {
+                          setShowAddPartipant((s) => !s);
+                          setNewParticipant(null);
+                        }}
+                      >
+                        {showAddParicipant ? "Close" : "+ Add"}
+                      </div>
+                    )}
+                  </div>
+                  {showAddParicipant && (
+                    <div className="mb-2">
+                      <Select<UserOption, false | true>
+                        isMulti={false}
+                        options={options}
+                        value={newParticipant}
+                        onChange={(
+                          newValue:
+                            | MultiValue<UserOption>
+                            | SingleValue<UserOption>
+                        ) => {
+                          setNewParticipant(
+                            newValue as SingleValue<UserOption>
+                          );
+                        }}
+                        placeholder="Search users..."
+                        components={{ Option: CustomOption }}
+                        styles={customStyles}
+                        isSearchable={true}
+                        noOptionsMessage={() => "No users found"}
+                      />
+                    </div>
+                  )}
+                  <div className="flex-grow-1" style={{ overflowY: "auto" }}>
+                    {chat.participants.map((participant) => (
+                      <div
+                        className="d-flex p-1"
+                        key={participant._id}
+                        style={{ fontSize: ".9rem" }}
+                      >
+                        <ProfileImage
+                          src={participant.avatar}
+                          size="30px"
+                          alt={participant.username}
+                        />
+
+                        <div className="ms-1 flex-grow-1">
+                          {participant.fullname}
+                        </div>
+
+                        {chat.admin === participant._id && (
+                          <div className="text-primary cursor-default">
+                            admin
+                          </div>
+                        )}
+                        {participant._id !== chat.admin &&
+                          chat.admin === user?._id && (
+                            <div
+                              className="text-danger cursor-pointer"
+                              onClick={() => {
+                                removeParticipant(participant._id);
+                              }}
+                            >
+                              remove
+                            </div>
+                          )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </Row>
-            <Form.Group controlId="user-fullname">
-              <Form.Label>Fullname</Form.Label>
-              <Form.Control
-                type="input"
-                value={profileUser?.fullname}
-                disabled
+              <Stack
+                gap={2}
+                direction="horizontal"
+                className="justify-content-end"
+              >
+                <Button
+                  variant="secondary"
+                  onClick={handleChatDetailsClose}
+                  size="sm"
+                >
+                  Close
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={() => {
+                    if (chat.admin === user?._id) deleteGroupChat(chat._id);
+                    else leaveChat(chat._id);
+                  }}
+                  size="sm"
+                >
+                  {chat.admin === user?._id ? "Delete" : "Leave"}
+                </Button>
+                {(imgSrc.trim() || groupName.trim() !== chat.name) && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      updateGroup(chat._id, groupName, imgSrc);
+                      setImgSrc("");
+                    }}
+                  >
+                    Save
+                  </Button>
+                )}
+                {showAddParicipant && (
+                  <Button
+                    variant="success"
+                    size="sm"
+                    disabled={!newParticipant}
+                    onClick={() => {
+                      if (newParticipant) addParticipant(newParticipant.value);
+                      setNewParticipant(null);
+                    }}
+                  >
+                    Add
+                  </Button>
+                )}
+              </Stack>
+            </div>
+          </Offcanvas.Body>
+        </Offcanvas>
+      ) : (
+        //chat details
+        <Offcanvas
+          className="profile-section"
+          show={showChatDetails}
+          scroll={false}
+          backdrop={false}
+          onHide={() => setShowChatDetails(false)}
+        >
+          <Offcanvas.Header className="justify-content-between profile-section-header">
+            <Offcanvas.Title>
+              {profileUser?.fullname + "'s profile"}
+            </Offcanvas.Title>
+            <div>
+              <IoClose
+                size={30}
+                className="cursor-pointer"
+                onClick={() => setShowChatDetails(false)}
               />
-            </Form.Group>
-            <Form.Group controlId="username">
-              <Form.Label>Username</Form.Label>
-              <Form.Control
-                type="input"
-                value={profileUser?.username}
-                disabled
-              ></Form.Control>
-            </Form.Group>
-            <Form.Group controlId="email">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="input"
-                value={profileUser?.email}
-                disabled
-              ></Form.Control>
-            </Form.Group>
-          </Stack>
-          <Stack
-            gap={2}
-            direction="horizontal"
-            className="justify-content-end mt-3"
-          >
-            <Button
-              variant="secondary"
-              onClick={() => setShowUserProfile(false)}
+            </div>
+          </Offcanvas.Header>
+          <Offcanvas.Body>
+            <Stack gap={1}>
+              <Row className="justify-content-center">
+                <div className="center mb-3">
+                  <div className="my-1">
+                    <ProfileImage
+                      src={profileUser?.avatar}
+                      alt="profile-image"
+                      size="150px"
+                    />
+                  </div>
+                </div>
+              </Row>
+              <Form.Group controlId="user-fullname">
+                <Form.Label>Fullname</Form.Label>
+                <Form.Control
+                  type="input"
+                  value={profileUser?.fullname}
+                  disabled
+                />
+              </Form.Group>
+              <Form.Group controlId="username">
+                <Form.Label>Username</Form.Label>
+                <Form.Control
+                  type="input"
+                  value={profileUser?.username}
+                  disabled
+                ></Form.Control>
+              </Form.Group>
+              <Form.Group controlId="email">
+                <Form.Label>Email</Form.Label>
+                <Form.Control
+                  type="input"
+                  value={profileUser?.email}
+                  disabled
+                ></Form.Control>
+              </Form.Group>
+            </Stack>
+            <Stack
+              gap={2}
+              direction="horizontal"
+              className="justify-content-end mt-3"
             >
-              Close
-            </Button>
-          </Stack>
-        </Offcanvas.Body>
-      </Offcanvas>
+              <Button
+                variant="secondary"
+                onClick={() => setShowChatDetails(false)}
+              >
+                Close
+              </Button>
+            </Stack>
+          </Offcanvas.Body>
+        </Offcanvas>
+      )}
 
       {/* Header Section */}
       <div className="chat-header">
@@ -343,7 +647,7 @@ const ChatArea: React.FC<Props> = ({
             {/* profile card */}
             <div
               className="d-flex align-items-center"
-              onClick={() => setShowUserProfile((s) => !s)}
+              onClick={() => setShowChatDetails((s) => !s)}
             >
               <ProfileImage
                 src={chat.isGroupChat ? chat.icon : profileUser?.avatar}

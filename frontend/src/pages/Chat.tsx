@@ -16,11 +16,16 @@ import { IoClose, IoSettingsSharp } from "react-icons/io5";
 import CreateChatModal from "../components/CreateChat/CreateChatModal";
 import { blobUrlToFile, LocalStorage, requestHandler } from "../utils";
 import {
+  addParticipant,
+  deleteGroup,
   deleteMessage,
   getAllChats,
   getChatMessages,
+  leaveGroup,
+  removeParticipant,
   sendMessage,
   updateAvatar,
+  updateGroup,
   updateUserDetails,
 } from "../api";
 import ChatName from "../components/ChatName";
@@ -290,6 +295,78 @@ const ChatPage = () => {
     }
   };
 
+  const addParticipantInTheGroup = async (newParticipantId: string) => {
+    requestHandler(
+      async () =>
+        await addParticipant(currentChatRef.current!._id, newParticipantId),
+      undefined,
+      (res) => {
+        const { data } = res;
+        currentChatRef.current = data;
+        setChats((prev) =>
+          prev.map((p) => (p._id === data._id ? { ...data } : p))
+        );
+      },
+      alert
+    );
+  };
+
+  const removeparticipantFromTheGroup = async (participantId: string) => {
+    requestHandler(
+      async () =>
+        await removeParticipant(currentChatRef.current!._id, participantId),
+      undefined,
+      (res) => {
+        const { data } = res;
+        currentChatRef.current = data;
+        setChats((prev) =>
+          prev.map((p) => (p._id === data._id ? { ...data } : p))
+        );
+      },
+      alert
+    );
+  };
+
+  const leaveGroupChat = async (chatId: string) => {
+    await requestHandler(
+      async () => await leaveGroup(chatId),
+      undefined,
+      () => {},
+      alert
+    );
+  };
+
+  const deleteGroupChat = async (chatId: string) => {
+    await requestHandler(
+      async () => await deleteGroup(chatId),
+      undefined,
+      () => {},
+      alert
+    );
+  };
+
+  const updateGroupChat = async (
+    chatId: string,
+    groupName: string,
+    groupIcon: string
+  ) => {
+    let icon: File;
+    if (groupIcon.trim()) icon = await blobUrlToFile(groupIcon);
+
+    await requestHandler(
+      async () => await updateGroup(chatId, groupName, icon),
+      undefined,
+      (res) => {
+        if (res.data._id === currentChatRef.current?._id)
+          currentChatRef.current = res.data;
+        setChats((prev) =>
+          prev.map((p) => (p._id === res.data._id ? { ...res.data } : p))
+        );
+      },
+      alert
+    );
+  };
+
   const onConnect = () => {
     setIsConnected(true);
   };
@@ -300,6 +377,11 @@ const ChatPage = () => {
 
   const onNewChat = (chat: ChatInterface) => {
     setChats((prev) => [chat, ...prev]);
+  };
+
+  const onLeaveChat = (chat: ChatInterface) => {
+    if (chat._id === currentChatRef.current?._id) currentChatRef.current = null;
+    setChats((prev) => prev.filter((p) => p._id !== chat._id));
   };
 
   const onMessageReceived = (message: MessageInterface) => {
@@ -344,6 +426,21 @@ const ChatPage = () => {
     updateLastMessageOnDeletion(newMessage.chat, newMessage);
   };
 
+  const onParticipantLeft = (chat: ChatInterface) => {
+    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    setChats((prev) => prev.map((p) => (chat._id === p._id ? { ...chat } : p)));
+  };
+
+  const onParticipantJoinded = (chat: ChatInterface) => {
+    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    setChats((prev) => prev.map((p) => (chat._id === p._id ? { ...chat } : p)));
+  };
+
+  const onGroupUpdateEvent = (chat: ChatInterface) => {
+    if (chat._id === currentChatRef.current?._id) currentChatRef.current = chat;
+    setChats((prev) => prev.map((p) => (p._id === chat._id ? { ...chat } : p)));
+  };
+
   useEffect(() => {
     if (!socket) return;
 
@@ -354,6 +451,10 @@ const ChatPage = () => {
     socket.on(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
     socket.on(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
     socket.on(ChatEventEnum.MESSAGE_DELETE_EVENT, onMessageDelete);
+    socket.on(ChatEventEnum.LEAVE_CHAT_EVENT, onLeaveChat);
+    socket.on(ChatEventEnum.PARTICIPANT_JOINED, onParticipantJoinded);
+    socket.on(ChatEventEnum.PARTICIPANT_LEFT, onParticipantLeft);
+    socket.on(ChatEventEnum.UPDATE_GROUP_EVENT, onGroupUpdateEvent);
 
     return () => {
       socket.off(ChatEventEnum.CONNECTED_EVENT, onConnect);
@@ -363,6 +464,10 @@ const ChatPage = () => {
       socket.off(ChatEventEnum.TYPING_EVENT, handleOnSocketTyping);
       socket.off(ChatEventEnum.STOP_TYPING_EVENT, handleOnSocketStopTyping);
       socket.off(ChatEventEnum.MESSAGE_DELETE_EVENT, onMessageDelete);
+      socket.off(ChatEventEnum.LEAVE_CHAT_EVENT, onLeaveChat);
+      socket.off(ChatEventEnum.PARTICIPANT_JOINED, onParticipantJoinded);
+      socket.off(ChatEventEnum.PARTICIPANT_LEFT, onParticipantLeft);
+      socket.off(ChatEventEnum.UPDATE_GROUP_EVENT, onGroupUpdateEvent);
     };
   }, [chats, socket]);
 
@@ -688,6 +793,17 @@ const ChatPage = () => {
               deleteMessages={() => {
                 deleteChatMessage();
               }}
+              addParticipant={(participantId: string) =>
+                addParticipantInTheGroup(participantId)
+              }
+              removeParticipant={(participantId: string) =>
+                removeparticipantFromTheGroup(participantId)
+              }
+              leaveChat={(chatId: string) => leaveGroupChat(chatId)}
+              deleteGroupChat={(chatId: string) => deleteGroupChat(chatId)}
+              updateGroup={(chatId: string, name: string, icon: string) =>
+                updateGroupChat(chatId, name, icon)
+              }
             />
           ) : (
             <Container className="h-100">
