@@ -84,7 +84,6 @@ const deleteCascadeChatMessages = async (chatId) => {
   const messages = await Message.find({
     chat: new mongoose.Types.ObjectId(chatId),
   });
-  if (!messages.length) throw new ApiError(404, "No messages found");
 
   const response = await Message.deleteMany({
     chat: new mongoose.Types.ObjectId(chatId),
@@ -193,12 +192,11 @@ const deleteSingleChat = asyncHandler(async (req, res) => {
   await deleteCascadeChatMessages(chatId);
 
   chat.participants.forEach((participant) => {
-    if (participant.toString() === req.user?._id) return;
     emitSocketEvent(
       req,
       participant.toString(),
       ChatEventEnum.LEAVE_CHAT_EVENT,
-      payload
+      chat
     );
   });
 
