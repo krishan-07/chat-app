@@ -409,3 +409,25 @@ img {
 .holded {
   background: #0d6dfd2f !important;
 }
+
+.alert-container {
+  position: fixed;
+  top: 20;
+  width: max-content;
+  z-index: 1050;
+  margin: auto;
+  left: 0;
+  right: 0;
+}
+.connectivity-alert {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  opacity: 0;
+  transform: translateY(-50px);
+}
+.connectivity-alert.show {
+  opacity: 1;
+  transform: translateY(20px);
+}
+.connectivity-alert.hide {
+  opacity: 0;
+}
