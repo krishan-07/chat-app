@@ -348,7 +348,10 @@ const ChatArea: React.FC<Props> = ({
   }, [chat]);
 
   return (
-    <div className="d-flex flex-column" style={{ height: "100%" }}>
+    <div
+      className="d-flex flex-column"
+      style={{ height: "100%", width: "100%" }}
+    >
       {/* chat details section */}
       {chat.isGroupChat ? (
         //group details
@@ -767,13 +770,10 @@ const ChatArea: React.FC<Props> = ({
               : //check if the file type is of video
               filesArrayType?.startsWith("video/")
               ? files.map((file) => (
-                  <div key={file.name}>
+                  <div key={file.name} className="w-100">
                     <div className="d-flex p-2 align-items-center">
                       <div className="center">
                         <video
-                          style={{
-                            aspectRatio: "1:1",
-                          }}
                           src={URL.createObjectURL(file)}
                           height="80px"
                           width="150px"
@@ -784,7 +784,12 @@ const ChatArea: React.FC<Props> = ({
                           Your browser does not support the video tag.
                         </video>
                       </div>
-                      <div className="flex-grow-1 px-2">{file.name}</div>
+                      <div
+                        className="flex-grow-1 px-2 text-truncate"
+                        style={{ width: 100 }}
+                      >
+                        {file.name}
+                      </div>
                       <div
                         className="cursor-pointer"
                         onClick={() => {
@@ -915,15 +920,21 @@ const ChatArea: React.FC<Props> = ({
                                         >
                                           {att.url.split("/").pop()}
                                         </div>
-                                        <div className="flex-shrink-1 px-1">
-                                          <Alert.Link
-                                            href={downloadLink}
-                                            download={att.url.split("/").pop()}
-                                            className="p-1 download-btn"
-                                          >
-                                            <MdOutlineFileDownload size={25} />
-                                          </Alert.Link>
-                                        </div>
+                                        {message.sender._id !== user?._id && (
+                                          <div className="flex-shrink-1 px-1">
+                                            <Alert.Link
+                                              href={downloadLink}
+                                              download={att.url
+                                                .split("/")
+                                                .pop()}
+                                              className="p-1 download-btn"
+                                            >
+                                              <MdOutlineFileDownload
+                                                size={25}
+                                              />
+                                            </Alert.Link>
+                                          </div>
+                                        )}
                                       </div>
                                     </div>
                                   );
@@ -941,15 +952,17 @@ const ChatArea: React.FC<Props> = ({
                                           objectFit: "contain",
                                         }}
                                       />
-                                      <div className="position-absolute center center-absolute">
-                                        <Alert.Link
-                                          href={downloadLink}
-                                          download={att.url.split("/").pop()}
-                                          className="p-1 download-btn"
-                                        >
-                                          <MdOutlineFileDownload size={25} />
-                                        </Alert.Link>
-                                      </div>
+                                      {message.sender._id !== user?._id && (
+                                        <div className="position-absolute center center-absolute">
+                                          <Alert.Link
+                                            href={downloadLink}
+                                            download={att.url.split("/").pop()}
+                                            className="p-1 download-btn"
+                                          >
+                                            <MdOutlineFileDownload size={25} />
+                                          </Alert.Link>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                                 else
@@ -966,22 +979,24 @@ const ChatArea: React.FC<Props> = ({
                                         width={200}
                                         height={120}
                                       />
-                                      <div
-                                        className="position-absolute center"
-                                        style={{
-                                          top: "5px",
-                                          right: "2px",
-                                          zIndex: "1",
-                                        }}
-                                      >
-                                        <Alert.Link
-                                          href={downloadLink}
-                                          download={att.url.split("/").pop()}
-                                          className="p-1 download-btn"
+                                      {message.sender._id !== user?._id && (
+                                        <div
+                                          className="position-absolute center"
+                                          style={{
+                                            top: "5px",
+                                            right: "2px",
+                                            zIndex: "1",
+                                          }}
                                         >
-                                          <MdOutlineFileDownload size={25} />
-                                        </Alert.Link>
-                                      </div>
+                                          <Alert.Link
+                                            href={downloadLink}
+                                            download={att.url.split("/").pop()}
+                                            className="p-1 download-btn"
+                                          >
+                                            <MdOutlineFileDownload size={25} />
+                                          </Alert.Link>
+                                        </div>
+                                      )}
                                     </div>
                                   );
                               })}
@@ -1008,7 +1023,7 @@ const ChatArea: React.FC<Props> = ({
                 })}
               <>
                 {isTyping ? (
-                  <Row className="mb-2 message-container receiver">
+                  <Row className="mb-2 message-container receiver mt-2">
                     <Col className="d-flex justify-content-start">
                       <Card className="message-bubble typing-bubble bg-dark">
                         <Card.Body className="p-1 d-flex flex-column">

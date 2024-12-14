@@ -87,7 +87,7 @@ img {
     width: 300px !important;
   }
 }
-@media screen and (min-width: 912px) {
+@media screen and (min-width: 913px) {
   .chat-sidebar {
     width: 450px !important;
   }
