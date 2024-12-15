@@ -46,12 +46,20 @@ import { UserInterface } from "../interface/user";
 import { IoIosArrowBack } from "react-icons/io";
 import { useErrorContext } from "../context/ErrorContext";
 import { useAlertContext } from "../context/AlertContext";
+import ConfirmationModal from "../components/ConfirmationModal";
+import useConfirmationModal from "../hooks/useConfirmationModal";
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
   const { socket } = useSocket();
   const { addError } = useErrorContext();
   const { showAlert } = useAlertContext();
+  const {
+    isModalVisible,
+    modalOptions,
+    showConfirmationModal,
+    hideConfirmationModal,
+  } = useConfirmationModal();
 
   //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
@@ -277,18 +285,33 @@ const ChatPage = () => {
     );
   };
 
-  const deleteChatMessage = async () => {
-    setHold(false);
-    holdedMessages.forEach(
-      async (message) =>
-        await requestHandler(
-          async () => await deleteMessage(message.chat, message._id),
-          undefined,
-          () => {},
-          addError
-        )
-    );
-    setHoldedMessages([]);
+  const deleteChatMessage = () => {
+    // Show the confirmation modal
+    showConfirmationModal({
+      title: holdedMessages.length > 1 ? "Delete Messages" : "Delete Message",
+      message:
+        holdedMessages.length > 1
+          ? "Are you sure you want to delete these Messages?"
+          : "Are you sure you want to delete this Message?",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        // Close the modal
+        hideConfirmationModal();
+
+        // Perform deletion
+        setHold(false);
+        for (const message of holdedMessages) {
+          await requestHandler(
+            async () => await deleteMessage(message.chat, message._id),
+            undefined,
+            () => {},
+            addError
+          );
+        }
+        setHoldedMessages([]); // Clear the selected messages
+      },
+    });
   };
 
   const updateLastMessageOnDeletion = (
@@ -324,39 +347,72 @@ const ChatPage = () => {
     );
   };
 
-  const removeparticipantFromTheGroup = async (participantId: string) => {
-    requestHandler(
-      async () =>
-        await removeParticipant(currentChatRef.current!._id, participantId),
-      undefined,
-      (res) => {
-        const { data } = res;
-        currentChatRef.current = data;
-        LocalStorage.set("current-chat", data);
-        setChats((prev) =>
-          prev.map((p) => (p._id === data._id ? { ...data } : p))
+  const removeParticipantFromGroup = async (participantId: string) => {
+    showConfirmationModal({
+      title: "Remove Participant?",
+      message:
+        "Are you sure you want to remove this participant from the group?",
+      confirmText: "Remove",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        hideConfirmationModal(); // Hide the modal before performing the action
+
+        await requestHandler(
+          async () =>
+            await removeParticipant(currentChatRef.current!._id, participantId),
+          undefined,
+          (res) => {
+            const { data } = res;
+            currentChatRef.current = data;
+            LocalStorage.set("current-chat", data);
+            setChats((prev) =>
+              prev.map((p) => (p._id === data._id ? { ...data } : p))
+            );
+          },
+          addError
         );
       },
-      addError
-    );
+    });
   };
 
   const leaveGroupChat = async (chatId: string) => {
-    await requestHandler(
-      async () => await leaveGroup(chatId),
-      undefined,
-      () => {},
-      addError
-    );
+    showConfirmationModal({
+      title: "Leave Group?",
+      message: "Do you really want to leave the group?",
+      confirmText: "Leave",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        hideConfirmationModal(); // Hide the modal first
+
+        // Perform the leave group action
+        await requestHandler(
+          async () => await leaveGroup(chatId),
+          undefined,
+          () => {}, // Optional success callback
+          addError
+        );
+      },
+    });
   };
 
   const deleteGroupChat = async (chatId: string) => {
-    await requestHandler(
-      async () => await deleteGroup(chatId),
-      undefined,
-      () => {},
-      addError
-    );
+    showConfirmationModal({
+      title: "Delete Group?",
+      message:
+        "Are you sure you want to delete this group? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        hideConfirmationModal(); // Hide the modal before performing the action
+
+        await requestHandler(
+          async () => await deleteGroup(chatId),
+          undefined,
+          () => {}, // Optional success callback
+          addError
+        );
+      },
+    });
   };
 
   const updateGroupChat = async (
@@ -385,14 +441,25 @@ const ChatPage = () => {
   };
 
   const deleteSingleChat = async (chatId: string) => {
-    await requestHandler(
-      async () => await deleteChat(chatId),
-      undefined,
-      () => {
-        if (breakPoint === "mobile") setShowChatSideBar(true);
+    showConfirmationModal({
+      title: "Delete Chat?",
+      message:
+        "Are you sure you want to delete this chat? This action cannot be undone.",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+      onConfirm: async () => {
+        hideConfirmationModal(); // Hide the modal before performing the action
+
+        await requestHandler(
+          async () => await deleteChat(chatId),
+          undefined,
+          () => {
+            if (breakPoint === "mobile") setShowChatSideBar(true);
+          },
+          addError
+        );
       },
-      addError
-    );
+    });
   };
 
   const onConnect = () => {
@@ -542,6 +609,15 @@ const ChatPage = () => {
 
   return (
     <>
+      <ConfirmationModal
+        show={isModalVisible}
+        onHide={hideConfirmationModal}
+        title={modalOptions?.title || "Are you sure?"}
+        message={modalOptions?.message || "Please confirm this action."}
+        confirmText={modalOptions?.confirmText || "Confirm"}
+        cancelText={modalOptions?.cancelText || "Cancel"}
+        onConfirm={modalOptions?.onConfirm || (() => {})}
+      />
       {/* chat side bar */}
       <Offcanvas
         className="chat-sidebar"
@@ -837,7 +913,7 @@ const ChatPage = () => {
                 addParticipantInTheGroup(participantId)
               }
               removeParticipant={(participantId: string) =>
-                removeparticipantFromTheGroup(participantId)
+                removeParticipantFromGroup(participantId)
               }
               leaveChat={(chatId: string) => leaveGroupChat(chatId)}
               deleteGroupChat={(chatId: string) => deleteGroupChat(chatId)}
