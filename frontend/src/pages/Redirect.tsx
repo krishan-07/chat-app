@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import Loading from "../components/Loading";
 import { useAuth } from "../context/AuthContext";
-import { extractParamsfromSearchUrl } from "../utils";
+import { extractParamsfromSearchUrl, LocalStorage } from "../utils";
 
 function Redirect() {
   const { Auth } = useAuth();
@@ -12,7 +12,10 @@ function Redirect() {
       "accessToken"
     );
     async function func() {
-      if (typeof accessToken === "string") await Auth({ accessToken });
+      if (typeof accessToken === "string") {
+        LocalStorage.set("token", accessToken);
+        await Auth(accessToken);
+      }
     }
     func();
   }, []);

@@ -53,6 +53,7 @@ export const requestHandler = async (
       LocalStorage.clear();
       if (isBrowser) window.location.href = "/login"; //redirect to login Page
     }
+    console.warn(extractErrorMessageFromHTMLDoc(error?.response?.data));
     addError(extractErrorMessageFromHTMLDoc(error?.response?.data));
   } finally {
     setLoading && setLoading(false);

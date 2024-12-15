@@ -37,8 +37,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const { addError } = useErrorContext();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [user, setUser] = useState<UserInterface | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const login = async (data: { field: string; password: string }) => {
@@ -92,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     );
   };
 
-  const Auth = async (accessToken: any) => {
+  const Auth = async (accessToken: string) => {
     await requestHandler(
       async () => await getCurrentUser(),
       setIsLoading,
@@ -101,7 +101,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(data);
         setToken(accessToken);
         LocalStorage.set("user", data);
-        LocalStorage.set("token", accessToken);
         navigate("/chat");
       },
       addError
