@@ -13,13 +13,9 @@ const GlobalErrorAlert: React.FC = () => {
           key={index}
           variant="danger"
           className="alert-container d-flex align-items-center p-2 px-3 gap-1"
-          style={{ width: "80%" }}
+          style={{ width: "90%" }}
         >
-          <div
-            className="flex-grow-1 text-truncate"
-            title={error}
-            style={{ width: "max-content" }}
-          >
+          <div className="flex-grow-1" title={error}>
             {error}
           </div>
           <Button
