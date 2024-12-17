@@ -4,7 +4,7 @@ import { FcGoogle } from "react-icons/fc";
 
 const GoogleAndGitHubSignInButtons = () => {
   const handleGithubLogin = async () => {
-    window.location.href = "http://localhost:8080/api/v1/users/auth/github";
+    window.location.href = import.meta.env.VITE_GITHUB_CALLBACK_URL;
   };
 
   return (
