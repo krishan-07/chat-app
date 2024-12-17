@@ -11,7 +11,7 @@ const useBreakpoint = (): Breakpoint => {
   });
 
   useEffect(() => {
-    let timeout: number;
+    let timeout: NodeJS.Timeout;
 
     const handleResize = () => {
       clearTimeout(timeout);
