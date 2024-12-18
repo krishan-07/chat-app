@@ -279,7 +279,7 @@ img {
 /* General message container */
 
 .chat-background {
-  background: url(../chat_background.png) !important;
+  background: url(https://res.cloudinary.com/krishan-07/image/upload/v1733393289/Screenshot_2024-12-05_153748_s0excm.png) !important;
   background-size: cover !important;
   background-position: center !important;
 }
