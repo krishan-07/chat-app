@@ -1,5 +1,5 @@
 export interface ApiInterface {
-  statusCode: number;
+  statuscode: number;
   data: any;
   message: string;
   success: boolean;
