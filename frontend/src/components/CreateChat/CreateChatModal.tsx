@@ -66,7 +66,6 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
       setIsLoading,
       (res) => {
         const { data } = res;
-        console.log(res.statuscode);
         if (res.statuscode === 200) {
           addError("Chat with selected user already exists");
           handleClose();
