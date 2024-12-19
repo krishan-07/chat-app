@@ -128,7 +128,7 @@ const CreateChatModal: React.FC<Props> = ({ show, setShow, onSucess }) => {
   };
 
   return (
-    <Modal show={show} onHide={() => setShow(false)}>
+    <Modal show={show} onHide={() => setShow(false)} centered>
       <Modal.Header className="justify-content-between">
         <Modal.Title>Create Chat</Modal.Title>
         <IoClose size={28} className="cursor-pointer" onClick={handleClose} />
