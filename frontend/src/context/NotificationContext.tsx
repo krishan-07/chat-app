@@ -28,7 +28,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
         registration.showNotification(message.sender, {
           body: message.text,
           icon: "/icon.svg",
-          data: { url: "http://localhost:3000/chat" },
+          data: { url: "https://chat-app-gules-pi.vercel.app/" },
         });
       });
       notificationSound.play();
