@@ -33,6 +33,23 @@ export class LocalStorage {
   }
 }
 
+export class NotificationSound {
+  private audio: HTMLAudioElement | null = null;
+
+  constructor() {
+    this.audio = new Audio("/notification.mp3");
+    this.audio.load(); // Preload the audio
+  }
+
+  play() {
+    if (this.audio) {
+      this.audio.play().catch((error) => {
+        console.error("Error playing notification sound:", error);
+      });
+    }
+  }
+}
+
 export const requestHandler = async (
   api: () => Promise<AxiosResponse<ApiInterface, any>>,
   setLoading: (loading: boolean) => void = () => {},

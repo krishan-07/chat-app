@@ -48,6 +48,7 @@ import { useErrorContext } from "../context/ErrorContext";
 import { useAlertContext } from "../context/AlertContext";
 import ConfirmationModal from "../components/ConfirmationModal";
 import useConfirmationModal from "../hooks/useConfirmationModal";
+import { useNotification } from "../context/NotificationContext";
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
@@ -60,6 +61,7 @@ const ChatPage = () => {
     showConfirmationModal,
     hideConfirmationModal,
   } = useConfirmationModal();
+  const { showNotification } = useNotification();
 
   //To use some func based on different website breakpoints
   const breakPoint = useBreakpoint();
@@ -490,6 +492,13 @@ const ChatPage = () => {
     // If it belongs to the current chat, update the messages list for the active chat
     else setUnreadMessages((prev) => [message, ...prev]);
 
+    const newMessage = {
+      id: message._id,
+      sender: message.sender.fullname,
+      text: message.content || "🔗 attachement",
+    };
+    showNotification(newMessage);
+
     updateChatLastMessage(message.chat || "", message);
   };
 
@@ -547,6 +556,27 @@ const ChatPage = () => {
     }
     setChats((prev) => prev.map((p) => (p._id === chat._id ? { ...chat } : p)));
   };
+
+  useEffect(() => {
+    const requestNotificationPermission = () => {
+      if (!("Notification" in window)) {
+        console.error("This browser does not support notifications.");
+        return;
+      }
+
+      Notification.requestPermission();
+    };
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/service-worker.js").catch((error) => {
+        console.error("Service Worker registration failed:", error);
+      });
+    } else {
+      console.error("Service Workers are not supported in this browser.");
+    }
+
+    requestNotificationPermission();
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
